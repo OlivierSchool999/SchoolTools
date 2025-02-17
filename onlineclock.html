@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clock</title>
+    <script>
+        function updateTime() {
+            let currentTime = new Date().toLocaleTimeString();
+            document.title = currentTime; // Update page title with time
+            document.getElementById('clock').innerHTML = currentTime; // Display time on page
+        }
+        setInterval(updateTime, 1000); // Update time every second
+    </script>
+</head>
+<body onload="updateTime()">
+    <div id="clock" style="font-size: 48px;"></div>
+</body>
+</html>
