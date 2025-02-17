@@ -23,6 +23,12 @@
             width: 100%;
             height: 100%;
             z-index: -1; /* Keep the background behind the clock */
+            transition: background-size 0.3s ease; /* Smooth transition for background scale */
+        }
+
+        /* Hover effect on background */
+        .container:hover {
+            background-size: 60px 60px; /* Increase size of background on hover */
         }
 
         /* Styling for the clock display */
