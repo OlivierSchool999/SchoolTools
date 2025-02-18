@@ -39,12 +39,14 @@
     <script>
         function updateTime() {
             let currentTime = new Date().toLocaleTimeString();
-@@ -14,6 +47,7 @@
+            document.getElementById("clock").innerText = currentTime;
+        }
+
+        setInterval(updateTime, 1000);  // Update every second
     </script>
 </head>
 <body onload="updateTime()">
     <div id="clock" style="font-size: 48px;"></div>
     <div class="container"></div>
-    <div id="clock"></div>
 </body>
 </html>
