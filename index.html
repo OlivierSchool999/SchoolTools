@@ -40,6 +40,7 @@
         function updateTime() {
             let currentTime = new Date().toLocaleTimeString();
             document.getElementById("clock").innerText = currentTime;
+            document.title = currentTime;  // Set the title to the current time
         }
 
         setInterval(updateTime, 1000);  // Update every second
