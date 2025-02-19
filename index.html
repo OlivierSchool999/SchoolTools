@@ -56,23 +56,39 @@
         }
     </style>
     <script>
+        let customTitle = "";  // To store the custom title if set by the user
+
         function updateTime() {
             let currentTime = new Date().toLocaleTimeString();
             document.getElementById("clock").innerText = currentTime;
             
+            // Update the title if it's set to use the %time% placeholder
+            if (customTitle.includes("%time%")) {
+                document.title = customTitle.replace("%time%", currentTime);
+            }
         }
 
         function applyCustomTitle() {
-            let currentTime = new Date().toLocaleTimeString();
             let userInput = document.getElementById("titleInput").value;
-            let customTitle = userInput.replace("%time%", currentTime);
-            document.title = customTitle;
+            customTitle = userInput;  // Store the custom title
+
+            // If the user input is empty, revert to the default time-based title
+            if (userInput === "") {
+                customTitle = ""; // Empty input will fall back to default behavior
+            }
+            // Apply the custom title immediately with the current time
+            updateTime();
         }
 
-        setInterval(updateTime, 1000);  // Update every second
+        window.onload = function() {
+            // Set the title to the current time on page load
+            let currentTime = new Date().toLocaleTimeString();
+            document.title = currentTime;
+            setInterval(updateTime, 1000);  // Update every second
+        };
     </script>
 </head>
-<body onload="updateTime()">
+<body>
     <div id="clock"></div>
     <div class="container"></div>
 
