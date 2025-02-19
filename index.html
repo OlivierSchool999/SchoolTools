@@ -35,19 +35,51 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
+        /* Styling for the input box and button */
+        .input-container {
+            text-align: center;
+            position: absolute;
+            top: 70%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+        }
+        #titleInput {
+            font-size: 20px;
+            padding: 5px;
+            margin-right: 10px;
+        }
+        #applyButton {
+            font-size: 20px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
     </style>
     <script>
         function updateTime() {
             let currentTime = new Date().toLocaleTimeString();
             document.getElementById("clock").innerText = currentTime;
-            document.title = currentTime;  // Set the title to the current time
+            document.title = currentTime;  // Set the title to the current time initially
+        }
+
+        function applyCustomTitle() {
+            let currentTime = new Date().toLocaleTimeString();
+            let userInput = document.getElementById("titleInput").value;
+            let customTitle = userInput.replace("%time%", currentTime);
+            document.title = customTitle;
         }
 
         setInterval(updateTime, 1000);  // Update every second
     </script>
 </head>
 <body onload="updateTime()">
-    <div id="clock" style="font-size: 48px;"></div>
+    <div id="clock"></div>
     <div class="container"></div>
+
+    <!-- Input box and button for custom title -->
+    <div class="input-container">
+        <input type="text" id="titleInput" placeholder="Enter title format (e.g., %time% - 10:15:00)" />
+        <button id="applyButton" onclick="applyCustomTitle()">Apply</button>
+    </div>
 </body>
 </html>
