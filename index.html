@@ -48,24 +48,19 @@
             padding: 5px;
             margin-right: 10px;
         }
-        #applyButton, #startGame {
+        #applyButton, #gameButton {
             font-size: 20px;
             padding: 5px 10px;
             cursor: pointer;
             margin-top: 10px;
         }
-        /* Flappy Nerd Game */
+        /* Button styling */
         .game-container {
             position: absolute;
             top: 50%;
             right: 5%;
             transform: translateY(-50%);
             text-align: center;
-        }
-        canvas {
-            background-color: lightblue;
-            display: block;
-            border: 2px solid black;
         }
     </style>
 </head>
@@ -78,10 +73,11 @@
         <button id="applyButton" onclick="applyCustomTitle()">Apply</button>
     </div>
 
-    <!-- Flappy Nerd Game -->
+    <!-- Game button -->
     <div class="game-container">
-        <button id="startGame">Play Flappy Nerd</button>
-        <canvas id="gameCanvas" width="320" height="480"></canvas>
+        <button id="gameButton" onclick="window.location.href='https://OlivierSchool999.github.io/OnlineClock/flappybird.html'">
+            Want a game?
+        </button>
     </div>
 
     <script>
@@ -109,95 +105,6 @@
             document.title = currentTime;
             setInterval(updateTime, 1000);
         };
-
-        // Flappy Nerd Game Logic
-        let canvas = document.getElementById("gameCanvas");
-        let ctx = canvas.getContext("2d");
-        let nerdEmoji = "🤓";
-        let nerd = { x: 50, y: 200, velocity: 0, gravity: 0.5, jumpStrength: -8 };
-        let pipes = [];
-        let gameRunning = false;
-        let score = 0;
-
-        function drawNerd() {
-            ctx.font = "30px Arial";
-            ctx.fillText(nerdEmoji, nerd.x, nerd.y);
-        }
-
-        function drawPipes() {
-            ctx.fillStyle = "green";
-            pipes.forEach(pipe => {
-                ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
-                ctx.fillRect(pipe.x, pipe.bottom, pipe.width, canvas.height - pipe.bottom);
-            });
-        }
-
-        function updateGame() {
-            if (!gameRunning) return;
-            nerd.velocity += nerd.gravity;
-            nerd.y += nerd.velocity;
-
-            pipes.forEach(pipe => {
-                pipe.x -= 3;
-                if (pipe.x + pipe.width < 0) {
-                    pipe.x = canvas.width;
-                    pipe.top = Math.random() * (canvas.height / 2);
-                    pipe.bottom = pipe.top + 150;
-                    score++;
-                }
-            });
-
-            if (nerd.y > canvas.height || nerd.y < 0 || checkCollision()) {
-                gameOver();
-            }
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPipes();
-            drawNerd();
-            ctx.fillStyle = "black";
-            ctx.fillText("Score: " + score, 10, 30);
-            requestAnimationFrame(updateGame);
-        }
-
-        function checkCollision() {
-            return pipes.some(pipe =>
-                (nerd.x + 30 > pipe.x && nerd.x < pipe.x + pipe.width) &&
-                (nerd.y < pipe.top || nerd.y + 30 > pipe.bottom)
-            );
-        }
-
-        function gameOver() {
-            alert("Game Over! Score: " + score);
-            resetGame();
-        }
-
-        function jump() {
-            if (!gameRunning) return;
-            nerd.velocity = nerd.jumpStrength;
-        }
-
-        function resetGame() {
-            nerd.y = 200;
-            nerd.velocity = 0;
-            pipes = [{ x: canvas.width, width: 50, top: 100, bottom: 250 }];
-            score = 0;
-            gameRunning = false;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "black";
-            ctx.fillText("Press Play to Start!", 50, 240);
-        }
-
-        document.getElementById("startGame").addEventListener("click", function() {
-            gameRunning = true;
-            pipes = [{ x: canvas.width, width: 50, top: 100, bottom: 250 }];
-            updateGame();
-        });
-
-        window.addEventListener("keydown", function(e) {
-            if (e.code === "Space") jump();
-        });
-
-        resetGame();
     </script>
 </body>
 </html>
