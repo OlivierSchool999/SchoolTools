@@ -29,18 +29,18 @@
             font-size: 48px;
             text-align: center;
             color: white;
-            z-index: 1; /* Ensure the clock appears on top */
+            z-index: 1;
             position: absolute;
             top: 50%;
-            left: 50%;
+            left: 30%;
             transform: translate(-50%, -50%);
         }
-        /* Styling for the input box and button */
+        /* Input box and button */
         .input-container {
             text-align: center;
             position: absolute;
             top: 70%;
-            left: 50%;
+            left: 30%;
             transform: translateX(-50%);
             color: white;
         }
@@ -54,15 +54,25 @@
             padding: 5px 10px;
             cursor: pointer;
         }
+        /* Flappy Nerd Game */
+        .game-container {
+            position: absolute;
+            top: 50%;
+            left: 65%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        canvas {
+            background-color: #222;
+            border: 2px solid white;
+        }
     </style>
     <script>
-        let customTitle = "";  // To store the custom title if set by the user
+        let customTitle = "";  
 
         function updateTime() {
             let currentTime = new Date().toLocaleTimeString();
             document.getElementById("clock").innerText = currentTime;
-            
-            // Update the title if it's set to use the %time% placeholder
             if (customTitle.includes("%time%")) {
                 document.title = customTitle.replace("%time%", currentTime);
             }
@@ -70,22 +80,107 @@
 
         function applyCustomTitle() {
             let userInput = document.getElementById("titleInput").value;
-            customTitle = userInput;  // Store the custom title
-
-            // If the user input is empty, revert to the default time-based title
+            customTitle = userInput;  
             if (userInput === "") {
-                customTitle = ""; // Empty input will fall back to default behavior
+                customTitle = ""; 
             }
-            // Apply the custom title immediately with the current time
             updateTime();
         }
 
         window.onload = function() {
-            // Set the title to the current time on page load
             let currentTime = new Date().toLocaleTimeString();
             document.title = currentTime;
-            setInterval(updateTime, 1000);  // Update every second
+            setInterval(updateTime, 1000);  
         };
+
+        // Flappy Nerd Game
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        document.querySelector(".game-container").appendChild(canvas);
+
+        canvas.width = 300;
+        canvas.height = 400;
+
+        let nerd = { x: 50, y: 200, width: 30, height: 30, velocity: 0, gravity: 0.5 };
+        let pipes = [];
+        let score = 0;
+        let gameOver = false;
+
+        function drawNerd() {
+            ctx.font = "30px Arial";
+            ctx.fillText("🤓", nerd.x, nerd.y);
+        }
+
+        function drawPipes() {
+            ctx.fillStyle = "green";
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+                ctx.fillRect(pipe.x, pipe.bottom, pipe.width, canvas.height - pipe.bottom);
+            });
+        }
+
+        function updatePipes() {
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < 200) {
+                let height = Math.random() * (canvas.height / 2) + 50;
+                pipes.push({ x: canvas.width, width: 40, top: height, bottom: height + 100 });
+            }
+            pipes.forEach(pipe => pipe.x -= 2);
+            if (pipes.length && pipes[0].x < -40) {
+                pipes.shift();
+                score++;
+            }
+        }
+
+        function checkCollision() {
+            if (nerd.y >= canvas.height || nerd.y <= 0) {
+                gameOver = true;
+            }
+            pipes.forEach(pipe => {
+                if (
+                    nerd.x < pipe.x + pipe.width &&
+                    nerd.x + nerd.width > pipe.x &&
+                    (nerd.y < pipe.top || nerd.y + nerd.height > pipe.bottom)
+                ) {
+                    gameOver = true;
+                }
+            });
+        }
+
+        function gameLoop() {
+            if (gameOver) {
+                ctx.fillStyle = "red";
+                ctx.font = "20px Arial";
+                ctx.fillText("Game Over! Refresh to restart", 30, 200);
+                return;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawNerd();
+            drawPipes();
+            updatePipes();
+            nerd.velocity += nerd.gravity;
+            nerd.y += nerd.velocity;
+            checkCollision();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function jump() {
+            nerd.velocity = -7;
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.code === "Space") jump();
+        });
+
+        document.addEventListener("click", jump);
+
+        function startGame() {
+            nerd.y = 200;
+            nerd.velocity = 0;
+            pipes = [];
+            score = 0;
+            gameOver = false;
+            gameLoop();
+        }
     </script>
 </head>
 <body>
@@ -96,6 +191,11 @@
     <div class="input-container">
         <input type="text" id="titleInput" placeholder="Enter title format (e.g., %time% - 10:15:00)" />
         <button id="applyButton" onclick="applyCustomTitle()">Apply</button>
+    </div>
+
+    <!-- Flappy Nerd Game -->
+    <div class="game-container">
+        <button onclick="startGame()">Start Flappy Nerd 🤓</button>
     </div>
 </body>
 </html>
