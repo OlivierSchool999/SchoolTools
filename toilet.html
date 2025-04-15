@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Toilet Mode</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background-color: black;
+      color: white;
+      font-size: 3em;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="message">Loading...</div>
+
+  <script>
+    function getMessageFromPath() {
+      const path = window.location.pathname;
+      const match = path.match(/\/text=(.+)/);
+      if (match && match[1]) {
+        const decoded = decodeURIComponent(match[1]).replace(/\+/g, ' ');
+        return decoded;
+      }
+      return "IM ON TOILET DONT TOUCH!!🤬🤬🤬🤬🤬🤬🤬";
+    }
+
+    document.getElementById("message").textContent = getMessageFromPath();
+  </script>
+</body>
+</html>
