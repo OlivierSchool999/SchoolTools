@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nederlandse Afkortingen</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Nederlandse Afkortingen</h1>
+  <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Zoek een afkorting of betekenis...">
+
+  <table id="afkortingenTable">
+    <thead>
+      <tr>
+        <th>Afkorting</th>
+        <th>Betekenis</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>i.p.v.</td><td>in plaats van</td></tr>
+      <tr><td>m.b.t.</td><td>met betrekking tot</td></tr>
+      <tr><td>d.w.z.</td><td>dat wil zeggen</td></tr>
+      <tr><td>t.a.v.</td><td>ter attentie van</td></tr>
+      <tr><td>o.a.</td><td>onder andere</td></tr>
+      <tr><td>z.s.m.</td><td>zo snel mogelijk</td></tr>
+      <tr><td>a.u.b.</td><td>alstublieft</td></tr>
+      <tr><td>n.a.v.</td><td>naar aanleiding van</td></tr>
+      <tr><td>e.d.</td><td>en dergelijke</td></tr>
+      <tr><td>t.z.t.</td><td>te zijner tijd</td></tr>
+      <tr><td>b.v.</td><td>bijvoorbeeld</td></tr>
+      <tr><td>enz.</td><td>enzovoort</td></tr>
+      <tr><td>RIVM</td><td>Rijksinstituut voor Volksgezondheid en Milieu</td></tr>
+      <tr><td>KNMI</td><td>Koninklijk Nederlands Meteorologisch Instituut</td></tr>
+      <tr><td>NS</td><td>Nederlandse Spoorwegen</td></tr>
+      <tr><td>OM</td><td>Openbaar Ministerie</td></tr>
+      <tr><td>UWV</td><td>Uitvoeringsinstituut Werknemersverzekeringen</td></tr>
+      <tr><td>KVK</td><td>Kamer van Koophandel</td></tr>
+      <tr><td>RDW</td><td>Rijksdienst voor het Wegverkeer</td></tr>
+      <tr><td>BTW</td><td>Belasting Toegevoegde Waarde</td></tr>
+      <tr><td>ZZP</td><td>Zelfstandige Zonder Personeel</td></tr>
+      <tr><td>BV</td><td>Besloten Vennootschap</td></tr>
+      <tr><td>NV</td><td>Naamloze Vennootschap</td></tr>
+      <tr><td>CAO</td><td>Collectieve Arbeidsovereenkomst</td></tr>
+      <tr><td>MKB</td><td>Midden- en Kleinbedrijf</td></tr>
+      <tr><td>GGD</td><td>Gemeentelijke Gezondheidsdienst</td></tr>
+      <tr><td>GGZ</td><td>Geestelijke Gezondheidszorg</td></tr>
+      <tr><td>EHBO</td><td>Eerste Hulp Bij Ongelukken</td></tr>
+      <tr><td>IC</td><td>Intensive Care</td></tr>
+      <tr><td>UMC</td><td>Universitair Medisch Centrum</td></tr>
+      <tr><td>wss</td><td>waarschijnlijk</td></tr>
+      <tr><td>idd</td><td>inderdaad</td></tr>
+      <tr><td>ff</td><td>even</td></tr>
+      <tr><td>svp</td><td>s’il vous plaît</td></tr>
+      <tr><td>asap</td><td>as soon as possible</td></tr>
+      <tr><td>WD</td><td>Windows Defender</td></tr>
+      <tr><td>MS Defender</td><td>Microsoft Defender</td></tr>
+      <tr><td>MDAV</td><td>Microsoft Defender Antivirus</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    function filterTable() {
+      const input = document.getElementById("searchInput");
+      const filter = input.value.toLowerCase();
+      const table = document.getElementById("afkortingenTable");
+      const trs = table.getElementsByTagName("tr");
+
+      for (let i = 1; i < trs.length; i++) {
+        const tds = trs[i].getElementsByTagName("td");
+        let show = false;
+        for (let j = 0; j < tds.length; j++) {
+          if (tds[j].innerText.toLowerCase().includes(filter)) {
+            show = true;
+            break;
+          }
+        }
+        trs[i].style.display = show ? "" : "none";
+      }
+    }
+  </script>
+</body>
+</html>
