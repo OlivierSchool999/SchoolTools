@@ -3,73 +3,99 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>time check</title>
-<style>
-    body {
-        font-family: sans-serif;
-        text-align: center;
-        background: #f3e5ab;
-    }
-    #cookie {
-        width: 200px;
-        cursor: pointer;
-        margin-top: 50px;
-    }
-    #counter {
-        font-size: 2em;
-        margin-top: 20px;
-    }
-    #codeInput {
-        margin-top: 20px;
-        padding: 5px;
-        font-size: 1em;
-    }
-    #submitCode {
-        padding: 5px 10px;
-        font-size: 1em;
-    }
-</style>
+<title>Time Check!</title>
 </head>
 <body>
-
-<h1>Time Check!</h1>
-<img id="cookie" src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Chocolate_Chip_Cookie.png" alt="Cookie">
-<div id="counter">Cookies: 0</div>
-
-<input type="text" id="codeInput" placeholder="Enter admin code">
-<button id="submitCode">Enter Code</button>
+<h1>Time Check</h1>
+<p>Ga naar een andere tab en het mini-cookie-spel opent!</p>
 
 <script>
-let cookies = 0;
-const cookieImg = document.getElementById('cookie');
-const counter = document.getElementById('counter');
-const codeInput = document.getElementById('codeInput');
-const submitCode = document.getElementById('submitCode');
+let miniWindow = null;
 
-// Klik op cookie
-cookieImg.addEventListener('click', () => {
-    cookies++;
-    updateCounter();
-});
+// Functie om mini-cookie window te openen
+function openMiniWindow() {
+    if (miniWindow == null || miniWindow.closed) {
+        miniWindow = window.open("", "CookieMini", "width=400,height=500,resizable=yes");
+        miniWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="nl">
+            <head>
+            <meta charset="UTF-8">
+            <title>Mini Cookie Clicker</title>
+            <style>
+                body {
+                    font-family: sans-serif;
+                    text-align: center;
+                    background: #f3e5ab;
+                }
+                #cookie {
+                    width: 200px;
+                    cursor: pointer;
+                    margin-top: 50px;
+                    transition: transform 0.1s;
+                }
+                #counter {
+                    font-size: 2em;
+                    margin-top: 20px;
+                }
+                #codeInput {
+                    margin-top: 20px;
+                    padding: 5px;
+                    font-size: 1em;
+                }
+                #submitCode {
+                    padding: 5px 10px;
+                    font-size: 1em;
+                }
+            </style>
+            </head>
+            <body>
+            <h1>🍪 Mini Cookie Clicker 🍪</h1>
+            <img id="cookie" src="https://images.steamusercontent.com/ugc/849343789381216102/B3EC643F7219322695F7159DED5AEF2CA25F7A92/?imw=512&&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false" alt="Cookie">
+            <div id="counter">Cookies: 0</div>
+            <input type="text" id="codeInput" placeholder="Enter admin code">
+            <button id="submitCode">Enter Code</button>
 
-// Update teller
-function updateCounter() {
-    counter.innerText = 'Cookies: ' + cookies.toLocaleString();
+            <script>
+                let cookies = 0;
+                const cookieImg = document.getElementById('cookie');
+                const counter = document.getElementById('counter');
+                const codeInput = document.getElementById('codeInput');
+                const submitCode = document.getElementById('submitCode');
+
+                // Klik op cookie met animatie
+                cookieImg.addEventListener('click', () => {
+                    cookies++;
+                    updateCounter();
+                    cookieImg.style.transform = 'scale(1.2)';
+                    setTimeout(() => { cookieImg.style.transform = 'scale(1)'; }, 100);
+                });
+
+                function updateCounter() {
+                    counter.innerText = 'Cookies: ' + cookies.toLocaleString();
+                }
+
+                // Admin code
+                submitCode.addEventListener('click', () => {
+                    const code = codeInput.value.trim();
+                    if (code === 'subtoharpy') {
+                        cookies = BigInt("100000000000000000000");
+                        updateCounter();
+                        alert('Admin code activated! You got 100000000000000000000 cookies!');
+                    } else {
+                        alert('Wrong code!');
+                    }
+                    codeInput.value = '';
+                });
+            <\/script>
+            </body>
+            </html>
+        `);
+    }
 }
 
-// Admin code
-submitCode.addEventListener('click', () => {
-    const code = codeInput.value.trim();
-    if (code === 'subtoharpy') {
-        cookies = BigInt("100000000000000000000"); // 100 quintillion cookies
-        updateCounter();
-        alert('Admin code activated! You got 100000000000000000000 cookies!');
-    } else {
-        alert('Wrong code!');
-    }
-    codeInput.value = '';
-});
+// Open mini window wanneer tab out-of-focus gaat
+window.addEventListener('blur', openMiniWindow);
 </script>
-
 </body>
 </html>
