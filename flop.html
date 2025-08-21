@@ -3,75 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flappy Bird Mini Window</title>
+<title>time check</title>
+<style>
+    body {
+        font-family: sans-serif;
+        text-align: center;
+        background: #f3e5ab;
+    }
+    #cookie {
+        width: 200px;
+        cursor: pointer;
+        margin-top: 50px;
+    }
+    #counter {
+        font-size: 2em;
+        margin-top: 20px;
+    }
+    #codeInput {
+        margin-top: 20px;
+        padding: 5px;
+        font-size: 1em;
+    }
+    #submitCode {
+        padding: 5px 10px;
+        font-size: 1em;
+    }
+</style>
 </head>
 <body>
-<h1>Flappy Bird Main Window</h1>
-<p>Druk op spatie om te springen.</p>
-<script>
-let miniWindow = null;
 
-function openMiniWindow() {
-    if (miniWindow == null || miniWindow.closed) {
-        miniWindow = window.open("", "FlappyMini", "width=300,height=400,resizable=yes");
-        miniWindow.document.write(`
-            <!DOCTYPE html>
-            <html lang="nl">
-            <head>
-            <meta charset="UTF-8">
-            <title>Flappy Bird Mini</title>
-            <style>
-            body { margin:0; overflow:hidden; background:#70c5ce; }
-            canvas { display:block; margin:0 auto; background:#70c5ce; }
-            </style>
-            </head>
-            <body>
-            <canvas id="gameCanvas" width="400" height="600"></canvas>
-            <script>
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            let bird = { x:50,y:300,w:20,h:20,dy:0 };
-            let pipes = [];
-            let gravity=0.6; let jump=-10; let frame=0; let gameOver=false;
-            function createPipe() {
-                const gap=100; const topHeight=Math.random()*200+50;
-                const bottomHeight=canvas.height-topHeight-gap;
-                pipes.push({x:canvas.width,top:topHeight,bottom:bottomHeight});
-            }
-            function resetGame() { bird={x:50,y:300,w:20,h:20,dy:0}; pipes=[]; frame=0; gameOver=false; }
-            function update() {
-                if(gameOver) return;
-                bird.dy+=gravity; bird.y+=bird.dy;
-                if(bird.y+bird.h>canvas.height||bird.y<0) gameOver=true;
-                frame++; if(frame%90===0) createPipe();
-                for(let pipe of pipes){
-                    pipe.x-=2;
-                    if(bird.x+bird.w>pipe.x && bird.x<pipe.x+40 &&
-                        (bird.y<pipe.top||bird.y+bird.h>canvas.height-pipe.bottom)) gameOver=true;
-                }
-                pipes=pipes.filter(p=>p.x+40>0);
-            }
-            function draw() {
-                ctx.clearRect(0,0,canvas.width,canvas.height);
-                ctx.fillStyle="yellow"; ctx.fillRect(bird.x,bird.y,bird.w,bird.h);
-                ctx.fillStyle="green";
-                for(let pipe of pipes){
-                    ctx.fillRect(pipe.x,0,40,pipe.top);
-                    ctx.fillRect(pipe.x,canvas.height-pipe.bottom,40,pipe.bottom);
-                }
-            }
-            function loop(){ update(); draw(); requestAnimationFrame(loop); }
-            document.addEventListener('keydown',e=>{ if(e.code==='Space'){ bird.dy=jump; if(gameOver) resetGame(); } });
-            loop();
-            <\/script>
-            </body>
-            </html>
-        `);
-    }
+<h1>Time Check!</h1>
+<img id="cookie" src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Chocolate_Chip_Cookie.png" alt="Cookie">
+<div id="counter">Cookies: 0</div>
+
+<input type="text" id="codeInput" placeholder="Enter admin code">
+<button id="submitCode">Enter Code</button>
+
+<script>
+let cookies = 0;
+const cookieImg = document.getElementById('cookie');
+const counter = document.getElementById('counter');
+const codeInput = document.getElementById('codeInput');
+const submitCode = document.getElementById('submitCode');
+
+// Klik op cookie
+cookieImg.addEventListener('click', () => {
+    cookies++;
+    updateCounter();
+});
+
+// Update teller
+function updateCounter() {
+    counter.innerText = 'Cookies: ' + cookies.toLocaleString();
 }
 
-// Open mini window wanneer tab out-of-focus gaat
-window.addEventListener('blur', openMiniWindow);
+// Admin code
+submitCode.addEventListener('click', () => {
+    const code = codeInput.value.trim();
+    if (code === 'subtoharpy') {
+        cookies = BigInt("100000000000000000000"); // 100 quintillion cookies
+        updateCounter();
+        alert('Admin code activated! You got 100000000000000000000 cookies!');
+    } else {
+        alert('Wrong code!');
+    }
+    codeInput.value = '';
+});
 </script>
+
 </body>
 </html>
