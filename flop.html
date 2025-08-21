@@ -1,1 +1,131 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flappy Bird Mini Window</title>
+<style>
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    overflow: hidden;
+  }
+  canvas {
+    background: #70c5ce;
+    display: block;
+    margin: 0 auto;
+  }
+  #miniWindow {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    height: 300px;
+    border: 2px solid #333;
+    z-index: 9999;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+<canvas id="miniWindow" width="200" height="300"></canvas>
+
+<script>
+const mainCanvas = document.getElementById('gameCanvas');
+const miniCanvas = document.getElementById('miniWindow');
+const mainCtx = mainCanvas.getContext('2d');
+const miniCtx = miniCanvas.getContext('2d');
+
+let bird = { x: 50, y: 300, w: 20, h: 20, dy: 0 };
+let pipes = [];
+let gravity = 0.6;
+let jump = -10;
+let frame = 0;
+let gameOver = false;
+
+function createPipe() {
+    const gap = 100;
+    const topHeight = Math.random() * 200 + 50;
+    const bottomHeight = mainCanvas.height - topHeight - gap;
+    pipes.push({ x: mainCanvas.width, top: topHeight, bottom: bottomHeight });
+}
+
+function resetGame() {
+    bird = { x: 50, y: 300, w: 20, h: 20, dy: 0 };
+    pipes = [];
+    frame = 0;
+    gameOver = false;
+}
+
+function update() {
+    if (gameOver) return;
+
+    bird.dy += gravity;
+    bird.y += bird.dy;
+
+    if (bird.y + bird.h > mainCanvas.height || bird.y < 0) gameOver = true;
+
+    frame++;
+    if (frame % 90 === 0) createPipe();
+
+    for (let pipe of pipes) {
+        pipe.x -= 2;
+
+        if (
+            bird.x + bird.w > pipe.x &&
+            bird.x < pipe.x + 40 &&
+            (bird.y < pipe.top || bird.y + bird.h > mainCanvas.height - pipe.bottom)
+        ) {
+            gameOver = true;
+        }
+    }
+
+    pipes = pipes.filter(p => p.x + 40 > 0);
+}
+
+function draw(ctx, scale = 1) {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // Bird
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(bird.x*scale, bird.y*scale, bird.w*scale, bird.h*scale);
+
+    // Pipes
+    ctx.fillStyle = "green";
+    for (let pipe of pipes) {
+        ctx.fillRect(pipe.x*scale, 0, 40*scale, pipe.top*scale);
+        ctx.fillRect(pipe.x*scale, (mainCanvas.height - pipe.bottom)*scale, 40*scale, pipe.bottom*scale);
+    }
+}
+
+function loop() {
+    update();
+    draw(mainCtx);
+    if (miniCanvas.style.display === "block") draw(miniCtx, miniCanvas.width / mainCanvas.width);
+    requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space') {
+        bird.dy = jump;
+        if (gameOver) resetGame();
+    }
+});
+
+// Show mini window when tab loses focus
+window.addEventListener('blur', () => {
+    miniCanvas.style.display = 'block';
+});
+
+// Hide mini window when tab gains focus
+window.addEventListener('focus', () => {
+    miniCanvas.style.display = 'none';
+});
+
+loop();
+</script>
+</body>
+</html>
 
