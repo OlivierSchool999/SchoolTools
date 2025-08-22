@@ -7,7 +7,8 @@
 </head>
 <body>
     <h1>Time Check</h1>
-    <p>Ga naar een andere tab en het mini-cookie-spel opent!</p>
+    <p>Klik op de onderstaande knop om het mini-cookie-spel te openen!</p>
+    <button id="openPopupButton">Open Mini Cookie Game</button>
 
     <script>
         let miniWindow = null;
@@ -121,15 +122,9 @@
             }
         }
 
-        // Trigger openMiniWindow when the tab becomes hidden (visibilitychange)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                openMiniWindow();
-            }
-        });
-
-        // Optionally also trigger the window opening when the user returns to the tab (focus)
-        window.addEventListener('focus', openMiniWindow);
+        // Add an event listener to the button to open the mini window
+        const openButton = document.getElementById('openPopupButton');
+        openButton.addEventListener('click', openMiniWindow);
     </script>
 </body>
 </html>
