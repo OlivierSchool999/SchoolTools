@@ -1,130 +1,160 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Check!</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookie Clicker Main Window</title>
+<style>
+    body {
+        font-family: sans-serif;
+        text-align: center;
+        padding-top: 50px;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 1.2em;
+        cursor: pointer;
+    }
+</style>
 </head>
 <body>
-    <h1>Time Check</h1>
-    <p>Klik op de onderstaande knop om het mini-cookie-spel te openen!</p>
-    <button id="openPopupButton">Open Mini Cookie Game</button>
+<h1>Cookie Clicker Control Panel</h1>
+<button id="openMini">Open Mini Window</button>
 
-    <script>
-        let miniWindow = null;
+<script>
+let miniWindow = null;
 
-        // Functie om mini-cookie window te openen
-        function openMiniWindow() {
-            // Check if the window is already open or closed
-            if (miniWindow == null || miniWindow.closed) {
-                miniWindow = window.open("", "CookieMini", "width=400,height=600,resizable=yes");
+document.getElementById('openMini').addEventListener('click', () => {
+    if (miniWindow == null || miniWindow.closed) {
+        miniWindow = window.open("", "MiniPanel", "width=450,height=600,resizable=yes");
+        miniWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="nl">
+            <head>
+            <meta charset="UTF-8">
+            <title>Mini Panel</title>
+            <style>
+                body {
+                    font-family: sans-serif;
+                    text-align: center;
+                    background: #f3e5ab;
+                }
+                #menu button {
+                    padding: 10px 15px;
+                    margin: 10px;
+                    font-size: 1.2em;
+                    cursor: pointer;
+                }
+                #gameSection, #clockSection {
+                    display: none;
+                    margin-top: 20px;
+                }
+                #cookie {
+                    width: 200px;
+                    cursor: pointer;
+                    transition: transform 0.1s;
+                }
+                #counter {
+                    font-size: 2em;
+                    margin-top: 20px;
+                }
+                #codeInput {
+                    margin-top: 20px;
+                    padding: 5px;
+                    font-size: 1em;
+                }
+                #submitCode {
+                    padding: 5px 10px;
+                    font-size: 1em;
+                }
+                #clock {
+                    font-size: 3em;
+                    margin-top: 50px;
+                }
+            </style>
+            </head>
+            <body>
+            <h1>Mini Window</h1>
+            <div id="menu">
+                <button onclick="showGame()">Game</button>
+                <button onclick="showClock()">Clock</button>
+            </div>
 
-                // Use setTimeout to delay the content writing slightly
-                setTimeout(() => {
-                    const content = `
-                        <!DOCTYPE html>
-                        <html lang="nl">
-                        <head>
-                            <meta charset="UTF-8">
-                            <title>Mini Cookie Clicker en Klok</title>
-                            <style>
-                                body {
-                                    font-family: sans-serif;
-                                    text-align: center;
-                                    background: #f3e5ab;
-                                }
-                                #cookie {
-                                    width: 200px;
-                                    cursor: pointer;
-                                    margin-top: 50px;
-                                    transition: transform 0.1s;
-                                }
-                                #counter {
-                                    font-size: 2em;
-                                    margin-top: 20px;
-                                }
-                                #clock {
-                                    font-size: 1.5em;
-                                    margin-top: 20px;
-                                }
-                                #codeInput {
-                                    margin-top: 20px;
-                                    padding: 5px;
-                                    font-size: 1em;
-                                }
-                                #submitCode {
-                                    padding: 5px 10px;
-                                    font-size: 1em;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <h1>🍪 Mini Cookie Clicker 🍪</h1>
-                            <img id="cookie" src="https://images.steamusercontent.com/ugc/849343789381216102/B3EC643F7219322695F7159DED5AEF2CA25F7A92/?imw=512&&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false" alt="Cookie">
-                            <div id="counter">Cookies: 0</div>
-                            <div id="clock">00:00:00</div>
-                            <input type="text" id="codeInput" placeholder="Enter admin code">
-                            <button id="submitCode">Enter Code</button>
+            <div id="gameSection">
+                <h2>🍪 Cookie Clicker 🍪</h2>
+                <img id="cookie" src="https://images.steamusercontent.com/ugc/849343789381216102/B3EC643F7219322695F7159DED5AEF2CA25F7A92/?imw=512&&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false" alt="Cookie">
+                <div id="counter">Cookies: 0</div>
+                <input type="text" id="codeInput" placeholder="Enter admin code">
+                <button id="submitCode">Enter Code</button>
+            </div>
 
-                            <script>
-                                let cookies = 0;
-                                const cookieImg = document.getElementById('cookie');
-                                const counter = document.getElementById('counter');
-                                const codeInput = document.getElementById('codeInput');
-                                const submitCode = document.getElementById('submitCode');
-                                const clockElement = document.getElementById('clock');
+            <div id="clockSection">
+                <h2>🕒 Digital Clock 🕒</h2>
+                <div id="clock">00:00:00</div>
+            </div>
 
-                                // Klik op cookie met animatie
-                                cookieImg.addEventListener('click', () => {
-                                    cookies++;
-                                    updateCounter();
-                                    cookieImg.style.transform = 'scale(1.2)';
-                                    setTimeout(() => { cookieImg.style.transform = 'scale(1)'; }, 100);
-                                });
+            <script>
+                const gameSection = document.getElementById('gameSection');
+                const clockSection = document.getElementById('clockSection');
 
-                                function updateCounter() {
-                                    counter.innerText = 'Cookies: ' + cookies.toLocaleString();
-                                }
+                function showGame() {
+                    gameSection.style.display = 'block';
+                    clockSection.style.display = 'none';
+                }
 
-                                // Admin code
-                                submitCode.addEventListener('click', () => {
-                                    const code = codeInput.value.trim();
-                                    if (code === 'subtoharpy') {
-                                        cookies = BigInt("100000000000000000000");
-                                        updateCounter();
-                                        alert('Admin code activated! You got 100000000000000000000 cookies!');
-                                    } else {
-                                        alert('Wrong code!');
-                                    }
-                                    codeInput.value = '';
-                                });
+                function showClock() {
+                    gameSection.style.display = 'none';
+                    clockSection.style.display = 'block';
+                }
 
-                                // Digitale klok
-                                function updateClock() {
-                                    const now = new Date();
-                                    const hours = String(now.getHours()).padStart(2, '0');
-                                    const minutes = String(now.getMinutes()).padStart(2, '0');
-                                    const seconds = String(now.getSeconds()).padStart(2, '0');
-                                    clockElement.innerText = \`\${hours}:\${minutes}:\${seconds}\`;
-                                }
-                                setInterval(updateClock, 1000);
-                                updateClock();  // Initialize klok direct
-                            </script>
-                        </body>
-                        </html>
-                    `;
+                // Cookie Clicker Logic
+                let cookies = 0;
+                const cookieImg = document.getElementById('cookie');
+                const counter = document.getElementById('counter');
+                const codeInput = document.getElementById('codeInput');
+                const submitCode = document.getElementById('submitCode');
 
-                    // Write the content to the mini window
-                    miniWindow.document.open();
-                    miniWindow.document.write(content);
-                    miniWindow.document.close();
-                }, 200); // Add a slight delay to give the browser time to open the window
-            }
-        }
+                cookieImg.addEventListener('click', () => {
+                    cookies++;
+                    updateCounter();
+                    cookieImg.style.transform = 'scale(1.2)';
+                    setTimeout(() => { cookieImg.style.transform = 'scale(1)'; }, 100);
+                });
 
-        // Add an event listener to the button to open the mini window
-        const openButton = document.getElementById('openPopupButton');
-        openButton.addEventListener('click', openMiniWindow);
-    </script>
+                function updateCounter() {
+                    counter.innerText = 'Cookies: ' + cookies.toLocaleString();
+                }
+
+                submitCode.addEventListener('click', () => {
+                    const code = codeInput.value.trim();
+                    if (code === 'subtoharpy') {
+                        cookies = BigInt("100000000000000000000");
+                        updateCounter();
+                        alert('Admin code activated! You got 100000000000000000000 cookies!');
+                    } else {
+                        alert('Wrong code!');
+                    }
+                    codeInput.value = '';
+                });
+
+                // Digital Clock Logic
+                function updateClock() {
+                    const now = new Date();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const seconds = String(now.getSeconds()).padStart(2, '0');
+                    document.getElementById('clock').innerText = hours + ':' + minutes + ':' + seconds;
+                }
+                setInterval(updateClock, 1000);
+                updateClock();
+            <\/script>
+            </body>
+            </html>
+        `);
+    } else {
+        miniWindow.focus();
+    }
+});
+</script>
 </body>
 </html>
