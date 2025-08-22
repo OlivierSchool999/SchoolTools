@@ -111,10 +111,10 @@
             }
         }
 
-        // Open mini window wanneer tab out-of-focus gaat
-        window.addEventListener('blur', () => {
-            // Delay the opening of the window to prevent being blocked by the browser
-            setTimeout(openMiniWindow, 100);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                setTimeout(openMiniWindow, 100);
+            }
         });
     </script>
 </body>
