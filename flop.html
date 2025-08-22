@@ -14,107 +14,110 @@
 
         // Functie om mini-cookie window te openen
         function openMiniWindow() {
+            // Check if the window is already open or closed
             if (miniWindow == null || miniWindow.closed) {
                 miniWindow = window.open("", "CookieMini", "width=400,height=600,resizable=yes");
 
-                // Build the content for the new mini window
-                const content = `
-                    <!DOCTYPE html>
-                    <html lang="nl">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>Mini Cookie Clicker en Klok</title>
-                        <style>
-                            body {
-                                font-family: sans-serif;
-                                text-align: center;
-                                background: #f3e5ab;
-                            }
-                            #cookie {
-                                width: 200px;
-                                cursor: pointer;
-                                margin-top: 50px;
-                                transition: transform 0.1s;
-                            }
-                            #counter {
-                                font-size: 2em;
-                                margin-top: 20px;
-                            }
-                            #clock {
-                                font-size: 1.5em;
-                                margin-top: 20px;
-                            }
-                            #codeInput {
-                                margin-top: 20px;
-                                padding: 5px;
-                                font-size: 1em;
-                            }
-                            #submitCode {
-                                padding: 5px 10px;
-                                font-size: 1em;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>🍪 Mini Cookie Clicker 🍪</h1>
-                        <img id="cookie" src="https://images.steamusercontent.com/ugc/849343789381216102/B3EC643F7219322695F7159DED5AEF2CA25F7A92/?imw=512&&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false" alt="Cookie">
-                        <div id="counter">Cookies: 0</div>
-                        <div id="clock">00:00:00</div>
-                        <input type="text" id="codeInput" placeholder="Enter admin code">
-                        <button id="submitCode">Enter Code</button>
-
-                        <script>
-                            let cookies = 0;
-                            const cookieImg = document.getElementById('cookie');
-                            const counter = document.getElementById('counter');
-                            const codeInput = document.getElementById('codeInput');
-                            const submitCode = document.getElementById('submitCode');
-                            const clockElement = document.getElementById('clock');
-
-                            // Klik op cookie met animatie
-                            cookieImg.addEventListener('click', () => {
-                                cookies++;
-                                updateCounter();
-                                cookieImg.style.transform = 'scale(1.2)';
-                                setTimeout(() => { cookieImg.style.transform = 'scale(1)'; }, 100);
-                            });
-
-                            function updateCounter() {
-                                counter.innerText = 'Cookies: ' + cookies.toLocaleString();
-                            }
-
-                            // Admin code
-                            submitCode.addEventListener('click', () => {
-                                const code = codeInput.value.trim();
-                                if (code === 'subtoharpy') {
-                                    cookies = BigInt("100000000000000000000");
-                                    updateCounter();
-                                    alert('Admin code activated! You got 100000000000000000000 cookies!');
-                                } else {
-                                    alert('Wrong code!');
+                // Use setTimeout to delay the content writing slightly
+                setTimeout(() => {
+                    const content = `
+                        <!DOCTYPE html>
+                        <html lang="nl">
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>Mini Cookie Clicker en Klok</title>
+                            <style>
+                                body {
+                                    font-family: sans-serif;
+                                    text-align: center;
+                                    background: #f3e5ab;
                                 }
-                                codeInput.value = '';
-                            });
+                                #cookie {
+                                    width: 200px;
+                                    cursor: pointer;
+                                    margin-top: 50px;
+                                    transition: transform 0.1s;
+                                }
+                                #counter {
+                                    font-size: 2em;
+                                    margin-top: 20px;
+                                }
+                                #clock {
+                                    font-size: 1.5em;
+                                    margin-top: 20px;
+                                }
+                                #codeInput {
+                                    margin-top: 20px;
+                                    padding: 5px;
+                                    font-size: 1em;
+                                }
+                                #submitCode {
+                                    padding: 5px 10px;
+                                    font-size: 1em;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>🍪 Mini Cookie Clicker 🍪</h1>
+                            <img id="cookie" src="https://images.steamusercontent.com/ugc/849343789381216102/B3EC643F7219322695F7159DED5AEF2CA25F7A92/?imw=512&&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false" alt="Cookie">
+                            <div id="counter">Cookies: 0</div>
+                            <div id="clock">00:00:00</div>
+                            <input type="text" id="codeInput" placeholder="Enter admin code">
+                            <button id="submitCode">Enter Code</button>
 
-                            // Digitale klok
-                            function updateClock() {
-                                const now = new Date();
-                                const hours = String(now.getHours()).padStart(2, '0');
-                                const minutes = String(now.getMinutes()).padStart(2, '0');
-                                const seconds = String(now.getSeconds()).padStart(2, '0');
-                                clockElement.innerText = \`\${hours}:\${minutes}:\${seconds}\`;
-                            }
-                            setInterval(updateClock, 1000);
-                            updateClock();  // Initialize klok direct
-                        </script>
-                    </body>
-                    </html>
-                `;
+                            <script>
+                                let cookies = 0;
+                                const cookieImg = document.getElementById('cookie');
+                                const counter = document.getElementById('counter');
+                                const codeInput = document.getElementById('codeInput');
+                                const submitCode = document.getElementById('submitCode');
+                                const clockElement = document.getElementById('clock');
 
-                // Write the content to the mini window
-                miniWindow.document.open();
-                miniWindow.document.write(content);
-                miniWindow.document.close();
+                                // Klik op cookie met animatie
+                                cookieImg.addEventListener('click', () => {
+                                    cookies++;
+                                    updateCounter();
+                                    cookieImg.style.transform = 'scale(1.2)';
+                                    setTimeout(() => { cookieImg.style.transform = 'scale(1)'; }, 100);
+                                });
+
+                                function updateCounter() {
+                                    counter.innerText = 'Cookies: ' + cookies.toLocaleString();
+                                }
+
+                                // Admin code
+                                submitCode.addEventListener('click', () => {
+                                    const code = codeInput.value.trim();
+                                    if (code === 'subtoharpy') {
+                                        cookies = BigInt("100000000000000000000");
+                                        updateCounter();
+                                        alert('Admin code activated! You got 100000000000000000000 cookies!');
+                                    } else {
+                                        alert('Wrong code!');
+                                    }
+                                    codeInput.value = '';
+                                });
+
+                                // Digitale klok
+                                function updateClock() {
+                                    const now = new Date();
+                                    const hours = String(now.getHours()).padStart(2, '0');
+                                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                                    const seconds = String(now.getSeconds()).padStart(2, '0');
+                                    clockElement.innerText = \`\${hours}:\${minutes}:\${seconds}\`;
+                                }
+                                setInterval(updateClock, 1000);
+                                updateClock();  // Initialize klok direct
+                            </script>
+                        </body>
+                        </html>
+                    `;
+
+                    // Write the content to the mini window
+                    miniWindow.document.open();
+                    miniWindow.document.write(content);
+                    miniWindow.document.close();
+                }, 200); // Add a slight delay to give the browser time to open the window
             }
         }
 
