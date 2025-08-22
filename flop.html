@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Harpy's Multitool!</title>
+<title>Time Check!</title>
 <style>
     body {
         font-family: sans-serif;
@@ -18,7 +18,8 @@
 </style>
 </head>
 <body>
-<h1>Cookie Clicker Control Panel</h1>
+<h1>Time Check! Control Panel</h1>
+<p>Klik op de knop om een mini-window te openen.</p>
 <button id="openMini">Open Mini Window</button>
 
 <script>
@@ -26,7 +27,7 @@ let miniWindow = null;
 
 document.getElementById('openMini').addEventListener('click', () => {
     if (miniWindow == null || miniWindow.closed) {
-        miniWindow = window.open("", "MiniPanel", "width=450,height=600,resizable=yes");
+        miniWindow = window.open("", "MiniPanel", "width=400,height=500,resizable=yes");
         miniWindow.document.write(`
             <!DOCTYPE html>
             <html lang="nl">
@@ -44,6 +45,14 @@ document.getElementById('openMini').addEventListener('click', () => {
                     margin: 10px;
                     font-size: 1.2em;
                     cursor: pointer;
+                }
+                #checkSizeBtn {
+                    background: #4CAF50;
+                    color: white;
+                    border: none;
+                    margin-top: 10px;
+                    font-size: 1em;
+                    padding: 8px 16px;
                 }
                 #gameSection, #clockSection {
                     display: none;
@@ -75,6 +84,10 @@ document.getElementById('openMini').addEventListener('click', () => {
             </head>
             <body>
             <h1>Mini Window</h1>
+            
+            <!-- Nieuwe knop -->
+            <button id="checkSizeBtn">Check Size</button>
+            
             <div id="menu">
                 <button onclick="showGame()">Game</button>
                 <button onclick="showClock()">Clock</button>
@@ -106,6 +119,11 @@ document.getElementById('openMini').addEventListener('click', () => {
                     gameSection.style.display = 'none';
                     clockSection.style.display = 'block';
                 }
+
+                // Check Size knop
+                document.getElementById('checkSizeBtn').addEventListener('click', () => {
+                    alert('Window size: ' + window.innerWidth + ' x ' + window.innerHeight);
+                });
 
                 // Cookie Clicker Logic
                 let cookies = 0;
