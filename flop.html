@@ -46,14 +46,6 @@ document.getElementById('openMini').addEventListener('click', () => {
                     font-size: 1.2em;
                     cursor: pointer;
                 }
-                #checkSizeBtn {
-                    background: #4CAF50;
-                    color: white;
-                    border: none;
-                    margin-top: 10px;
-                    font-size: 1em;
-                    padding: 8px 16px;
-                }
                 #gameSection, #clockSection {
                     display: none;
                     margin-top: 20px;
@@ -85,9 +77,6 @@ document.getElementById('openMini').addEventListener('click', () => {
             <body>
             <h1>Mini Window</h1>
             
-            <!-- Nieuwe knop -->
-            <button id="checkSizeBtn">Check Size</button>
-            
             <div id="menu">
                 <button onclick="showGame()">Game</button>
                 <button onclick="showClock()">Clock</button>
@@ -113,17 +102,14 @@ document.getElementById('openMini').addEventListener('click', () => {
                 function showGame() {
                     gameSection.style.display = 'block';
                     clockSection.style.display = 'none';
+                    window.resizeTo(400, 500);
                 }
 
                 function showClock() {
                     gameSection.style.display = 'none';
                     clockSection.style.display = 'block';
+                    window.resizeTo(400, 366);
                 }
-
-                // Check Size knop
-                document.getElementById('checkSizeBtn').addEventListener('click', () => {
-                    alert('Window size: ' + window.innerWidth + ' x ' + window.innerHeight);
-                });
 
                 // Cookie Clicker Logic
                 let cookies = 0;
