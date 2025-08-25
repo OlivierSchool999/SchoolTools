@@ -68,9 +68,18 @@ document.getElementById('openMini').addEventListener('click', () => {
                     padding: 5px 10px;
                     font-size: 1em;
                 }
+                /* Digitale klokstijl */
+                #clockContainer {
+                    background: black;
+                    color: limegreen;
+                    font-family: "Courier New", monospace;
+                    padding: 30px;
+                    border-radius: 10px;
+                    display: inline-block;
+                    margin-top: 40px;
+                }
                 #clock {
                     font-size: 3em;
-                    margin-top: 50px;
                 }
             </style>
             </head>
@@ -92,7 +101,9 @@ document.getElementById('openMini').addEventListener('click', () => {
 
             <div id="clockSection">
                 <h2>🕒 Digital Clock 🕒</h2>
-                <div id="clock">00:00:00</div>
+                <div id="clockContainer">
+                    <div id="clock">00:00:00</div>
+                </div>
             </div>
 
             <script>
