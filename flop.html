@@ -8,122 +8,58 @@
     body {
         font-family: sans-serif;
         text-align: center;
-        padding-top: 50px;
+        background: #e6f2ff;
+        margin-top: 50px;
     }
-    button {
-        padding: 10px 20px;
+    select, button {
+        padding: 10px;
         font-size: 1.2em;
-        cursor: pointer;
+        margin: 10px;
     }
 </style>
 </head>
 <body>
-<h1>Time Check! Control Panel</h1>
-<p>Klik op de knop om een mini-window te openen.</p>
-<button id="openMini">Open Mini Window</button>
+
+<h1>Time Check!</h1>
+<p>Kies wat je wilt openen:</p>
+
+<select id="windowSelector">
+    <option value="game">Cookie Clicker Game</option>
+    <option value="clock">Digital Clock</option>
+</select>
+<br>
+<button id="openWindow">Open Window</button>
 
 <script>
-let miniWindow = null;
+document.getElementById('openWindow').addEventListener('click', () => {
+    const choice = document.getElementById('windowSelector').value;
+    let miniWindow;
 
-document.getElementById('openMini').addEventListener('click', () => {
-    if (miniWindow == null || miniWindow.closed) {
-        miniWindow = window.open("", "MiniPanel", "width=400,height=500,resizable=yes");
+    if (choice === 'game') {
+        miniWindow = window.open("", "GameWindow", "width=400,height=500,resizable=yes");
         miniWindow.document.write(`
             <!DOCTYPE html>
             <html lang="nl">
             <head>
             <meta charset="UTF-8">
-            <title>Mini Panel</title>
+            <title>Cookie Clicker</title>
             <style>
-                body {
-                    font-family: sans-serif;
-                    text-align: center;
-                    background: #f3e5ab;
-                }
-                #menu button {
-                    padding: 10px 15px;
-                    margin: 10px;
-                    font-size: 1.2em;
-                    cursor: pointer;
-                }
-                #gameSection, #clockSection {
-                    display: none;
-                    margin-top: 20px;
-                }
-                #cookie {
-                    width: 200px;
-                    cursor: pointer;
-                    transition: transform 0.1s;
-                }
-                #counter {
-                    font-size: 2em;
-                    margin-top: 20px;
-                }
-                #codeInput {
-                    margin-top: 20px;
-                    padding: 5px;
-                    font-size: 1em;
-                }
-                #submitCode {
-                    padding: 5px 10px;
-                    font-size: 1em;
-                }
-                /* Digitale klokstijl */
-                #clockContainer {
-                    background: black;
-                    color: limegreen;
-                    font-family: "Courier New", monospace;
-                    padding: 30px;
-                    border-radius: 10px;
-                    display: inline-block;
-                    margin-top: 40px;
-                }
-                #clock {
-                    font-size: 3em;
-                }
+                body { font-family: sans-serif; text-align: center; background: #f3e5ab; }
+                #cookie { width: 200px; cursor: pointer; margin-top: 50px; transition: transform 0.1s; }
+                #counter { font-size: 2em; margin-top: 20px; }
+                #codeInput { margin-top: 20px; padding: 5px; font-size: 1em; }
+                #submitCode { padding: 5px 10px; font-size: 1em; }
             </style>
             </head>
             <body>
-            <h1>Mini Window</h1>
-            
-            <div id="menu">
-                <button onclick="showGame()">Game</button>
-                <button onclick="showClock()">Clock</button>
-            </div>
-
-            <div id="gameSection">
-                <h2>🍪 Cookie Clicker 🍪</h2>
-                <img id="cookie" src="https://images.steamusercontent.com/ugc/849343789381216102/B3EC643F7219322695F7159DED5AEF2CA25F7A92/?imw=512&&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false" alt="Cookie">
-                <div id="counter">Cookies: 0</div>
-                <input type="text" id="codeInput" placeholder="Enter admin code">
-                <button id="submitCode">Enter Code</button>
-            </div>
-
-            <div id="clockSection">
-                <h2>🕒 Digital Clock 🕒</h2>
-                <div id="clockContainer">
-                    <div id="clock">00:00:00</div>
-                </div>
-            </div>
+            <h1>🍪 Cookie Clicker 🍪</h1>
+            <img id="cookie" src="https://images.steamusercontent.com/ugc/849343789381216102/B3EC643F7219322695F7159DED5AEF2CA25F7A92/?imw=512&&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false" alt="Cookie">
+            <div id="counter">Cookies: 0</div>
+            <input type="text" id="codeInput" placeholder="Enter admin code">
+            <button id="submitCode">Enter Code</button>
 
             <script>
-                const gameSection = document.getElementById('gameSection');
-                const clockSection = document.getElementById('clockSection');
-
-                function showGame() {
-                    gameSection.style.display = 'block';
-                    clockSection.style.display = 'none';
-                    window.resizeTo(400, 500);
-                }
-
-                function showClock() {
-                    gameSection.style.display = 'none';
-                    clockSection.style.display = 'block';
-                    window.resizeTo(400, 366);
-                }
-
-                // Cookie Clicker Logic
-                let cookies = 0;
+                let cookies = 0n;
                 const cookieImg = document.getElementById('cookie');
                 const counter = document.getElementById('counter');
                 const codeInput = document.getElementById('codeInput');
@@ -151,14 +87,39 @@ document.getElementById('openMini').addEventListener('click', () => {
                     }
                     codeInput.value = '';
                 });
-
-                // Digital Clock Logic
+            <\/script>
+            </body>
+            </html>
+        `);
+    } else if (choice === 'clock') {
+        miniWindow = window.open("", "ClockWindow", "width=400,height=366,resizable=yes");
+        miniWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="nl">
+            <head>
+            <meta charset="UTF-8">
+            <title>Digital Clock</title>
+            <style>
+                body {
+                    font-family: monospace;
+                    background: black;
+                    color: limegreen;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                    font-size: 4em;
+                }
+            </style>
+            </head>
+            <body>
+            <div id="clock"></div>
+            <script>
                 function updateClock() {
                     const now = new Date();
-                    const hours = String(now.getHours()).padStart(2, '0');
-                    const minutes = String(now.getMinutes()).padStart(2, '0');
-                    const seconds = String(now.getSeconds()).padStart(2, '0');
-                    document.getElementById('clock').innerText = hours + ':' + minutes + ':' + seconds;
+                    const timeString = now.toLocaleTimeString('nl-NL', { hour12: false });
+                    document.getElementById('clock').textContent = timeString;
                 }
                 setInterval(updateClock, 1000);
                 updateClock();
@@ -166,10 +127,9 @@ document.getElementById('openMini').addEventListener('click', () => {
             </body>
             </html>
         `);
-    } else {
-        miniWindow.focus();
     }
 });
 </script>
+
 </body>
 </html>
