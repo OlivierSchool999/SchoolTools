@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timer</title>
+<style>
+    body {
+        font-family: sans-serif;
+        text-align: center;
+        background: #f0f8ff;
+        padding-top: 50px;
+    }
+
+    input, button {
+        padding: 10px;
+        font-size: 1.2em;
+        margin: 10px;
+    }
+
+    #countdown {
+        font-size: 2em;
+        margin-top: 20px;
+    }
+</style>
+</head>
+<body>
+
+<h1>⏰ Stel je timer in</h1>
+
+<label>Minuten: <input type="number" id="minutesInput" min="0" value="1"></label>
+<label>Seconden: <input type="number" id="secondsInput" min="0" value="0"></label>
+<br>
+<button id="startButton">Start Timer</button>
+
+<div id="countdown"></div>
+
+<script>
+    let timerInterval;
+
+    document.getElementById('startButton').addEventListener('click', () => {
+        const minutes = parseInt(document.getElementById('minutesInput').value) || 0;
+        const seconds = parseInt(document.getElementById('secondsInput').value) || 0;
+        let totalSeconds = minutes * 60 + seconds;
+
+        if (totalSeconds <= 0) {
+            alert("Voer een geldige tijd in.");
+            return;
+        }
+
+        clearInterval(timerInterval);
+
+        updateCountdownDisplay(totalSeconds);
+
+        timerInterval = setInterval(() => {
+            totalSeconds--;
+            updateCountdownDisplay(totalSeconds);
+
+            if (totalSeconds <= 0) {
+                clearInterval(timerInterval);
+                openPopup();
+            }
+        }, 1000);
+    });
+
+    function updateCountdownDisplay(secondsLeft) {
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        document.getElementById('countdown').textContent =
+            `Resterende tijd: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function openPopup() {
+        const popup = window.open("", "popup", "width=300,height=150");
+        popup.document.write(`
+            <!DOCTYPE html>
+            <html lang="nl">
+            <head>
+                <meta charset="UTF-8">
+                <title>Tijd is om</title>
+                <style>
+                    body {
+                        font-family: sans-serif;
+                        background-color: #ffcccc;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                        color: red;
+                        font-size: 1.5em;
+                    }
+                </style>
+            </head>
+            <body>
+                <div>Time’s up buddy!</div>
+            </body>
+            </html>
+        `);
+    }
+</script>
+
+</body>
+</html>
