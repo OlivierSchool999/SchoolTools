@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Geheime Code Generator</title>
+  <style>
+    :root {
+      --bg: #0f172a;       /* slate-900 */
+      --card: #111827;     /* gray-900 */
+      --muted: #9ca3af;    /* gray-400 */
+      --text: #e5e7eb;     /* gray-200 */
+      --accent: #22d3ee;   /* cyan-400 */
+      --ring: rgba(34,211,238,.4);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1000px 600px at 15% -10%, #1f2937 0%, transparent 60%),
+                  radial-gradient(1000px 600px at 85% 110%, #0e7490 0%, transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100svh;
+      display: grid; place-items: center;
+      padding: 24px;
+    }
+    .wrap {
+      width: 100%; max-width: 980px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 10px 40px rgba(0,0,0,.4);
+      border-radius: 16px; padding: 20px; backdrop-filter: blur(6px);
+    }
+    h1 { font-size: clamp(22px, 2.6vw, 34px); margin: 0 0 10px; letter-spacing: .4px; }
+    p { margin-top: 0; color: var(--muted); }
+
+    .grid { display: grid; gap: 16px; }
+    @media (min-width: 880px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    textarea, input[type="text"] {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: #0b1220; color: var(--text); resize: vertical; min-height: 140px;
+      outline: none; box-shadow: inset 0 0 0 2px transparent; transition: box-shadow .2s, border-color .2s;
+    }
+    textarea:focus { box-shadow: 0 0 0 4px var(--ring); border-color: var(--accent); }
+
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .btn {
+      appearance: none; border: 1px solid rgba(255,255,255,.12); background: linear-gradient(180deg,#0ea5b726,#0ea5b70f);
+      color: var(--text); padding: 10px 14px; border-radius: 12px; font-weight: 700; letter-spacing: .3px;
+      cursor: pointer; transition: transform .04s ease, filter .2s ease, background .2s;
+    }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: translateY(1px); }
+
+    .switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .switch input { appearance: none; width: 44px; height: 26px; background: #111827; border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px; position: relative; transition: background .2s, border-color .2s; }
+    .switch input:after { content: ""; position: absolute; inset: 3px; width: 18px; height: 18px; background: #e5e7eb;
+      border-radius: 999px; transform: translateX(0); transition: transform .2s ease; }
+    .switch input:checked { background: #0ea5b7; border-color: #22d3ee; }
+    .switch input:checked:after { transform: translateX(18px); background: white; }
+
+    .hint { font-size: 12px; color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .out { min-height: 140px; white-space: pre-wrap; word-wrap: break-word; background: #0b1220; border-radius: 12px; border: 1px dashed rgba(255,255,255,.12); padding: 12px 14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>🔐 Geheime Code Generator</h1>
+      <p>Voer je tekst in, en krijg een <em>gerandomiseerde</em> code met hoofdletters en nummer-omzettingen (bijv. <span class="mono">i → 1</span>, <span class="mono">e → 3</span>, <span class="mono">o → 0</span>). Uitvoer bevat alleen letters en cijfers (optioneel spaties).</p>
+
+      <div class="grid">
+        <div>
+          <label for="in">Invoer</label>
+          <textarea id="in" placeholder="Typ hier je bericht..."></textarea>
+
+          <div class="row" style="margin-top:12px">
+            <label class="switch">
+              <input type="checkbox" id="keepSpaces" checked>
+            </label>
+            <span>Spaties behouden</span>
+
+            <label class="switch" style="margin-left:18px">
+              <input type="checkbox" id="aggressiveLeet">
+            </label>
+            <span>Extra veel nummers</span>
+
+            <button class="btn" id="gen">Genereer</button>
+            <button class="btn" id="copy">Kopieer</button>
+          </div>
+
+          <p class="hint">Tip: plak dit bestand rechtstreeks op GitHub Pages voor een simpele online tool.</p>
+        </div>
+
+        <div>
+          <label for="out">Uitvoer</label>
+          <div id="out" class="out mono" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Basis leet-omzettingen (alleen cijfers) — past in jouw vraag
+    const LEET = {
+      a: '4', e: '3', i: '1', o: '0', s: '5', t: '7', b: '8', g: '9', z: '2'
+    };
+
+    function normalizeDiacritics(s) {
+      return s.normalize('NFD').replace(/\p{Diacritic}+/gu, '');
+    }
+
+    function randomBool(p = 0.5) { return Math.random() < p; }
+
+    function toSecret(input, { keepSpaces = true, aggressiveLeet = false } = {}) {
+      const out = [];
+      const src = normalizeDiacritics(String(input)).toLowerCase();
+
+      for (let ch of src) {
+        const isLetter = /[a-z]/.test(ch);
+        const isDigit = /[0-9]/.test(ch);
+        const isSpace = ch === ' ';
+
+        if (isLetter) {
+          const useNum = aggressiveLeet ? randomBool(0.75) : randomBool(0.45);
+          if (LEET[ch] && useNum) {
+            out.push(LEET[ch]); // vervang met cijfer
+          } else {
+            // laat als letter, soms hoofdletter
+            out.push(randomBool() ? ch.toUpperCase() : ch);
+          }
+          continue;
+        }
+
+        if (isDigit) { out.push(ch); continue; }
+
+        if (isSpace && keepSpaces) { out.push(' '); continue; }
+
+        // Alles anders (punctuatie, emoji, etc.) overslaan zodat uitvoer alleen [A-Za-z0-9] (+ optionele spaties) is
+      }
+
+      // Extra shuffle-achtige variatie: op ~20% posities wissel hoofdletterstatus om
+      for (let i = 0; i < out.length; i++) {
+        if (randomBool(0.2) && /[A-Za-z]/.test(out[i])) {
+          const c = out[i];
+          out[i] = c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase();
+        }
+      }
+
+      return out.join('');
+    }
+
+    const $in = document.getElementById('in');
+    const $out = document.getElementById('out');
+    const $gen = document.getElementById('gen');
+    const $copy = document.getElementById('copy');
+    const $keepSpaces = document.getElementById('keepSpaces');
+    const $aggressive = document.getElementById('aggressiveLeet');
+
+    function generate() {
+      const code = toSecret($in.value, { keepSpaces: $keepSpaces.checked, aggressiveLeet: $aggressive.checked });
+      $out.textContent = code;
+    }
+
+    $gen.addEventListener('click', generate);
+    $in.addEventListener('input', () => { if ($in.value.length < 240) generate(); });
+
+    $copy.addEventListener('click', async () => {
+      const text = $out.textContent || '';
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        $copy.textContent = 'Gekopieerd!';
+        setTimeout(() => ($copy.textContent = 'Kopieer'), 1200);
+      } catch (e) {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        $copy.textContent = 'Gekopieerd!';
+        setTimeout(() => ($copy.textContent = 'Kopieer'), 1200);
+      }
+    });
+
+    // Demo-startwaarde
+    $in.value = 'Hallo wereld! Dit is mijn geheime bericht.';
+    generate();
+  </script>
+</body>
+</html>
