@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loading time...</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: white; /* Looks like a blank document */
+    }
+
+    #mc-frame {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      display: none; /* Hidden by default */
+      z-index: 9999;
+    }
+  </style>
+  <script>
+    function updateTitleWithTime() {
+      const now = new Date();
+      document.title = now.toLocaleTimeString();
+    }
+
+    setInterval(updateTitleWithTime, 1000);
+    window.onload = updateTitleWithTime;
+
+    // Secret toggle: Shift + M to show/hide Minecraft
+    window.addEventListener('keydown', function(e) {
+      if (e.shiftKey && e.key.toLowerCase() === 'm') {
+        const iframe = document.getElementById('mc-frame');
+        iframe.style.display = iframe.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+  </script>
+</head>
+<body>
+  <iframe id="mc-frame" src="https://classic.minecraft.net" allow="fullscreen"></iframe>
+</body>
+</html>
