@@ -157,13 +157,22 @@
     submitBtn.addEventListener('click', checkAnswer);
     answerInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') checkAnswer(); });
 
-    showBtn.addEventListener('click', ()=>{
-      brainEl.textContent = 'Antwoord: ' + current.ans;
-      xp = Math.max(0, xp - 2);
-      saveState();
-      statusEl.textContent = 'Antwoord getoond (-2 XP). Nieuwe som komt zo';
-      setTimeout(()=>{ genProblem(); }, 1200);
-    });
+    showBtn.addEventListener('click', () => {
+  if (xp < 2) {
+    statusEl.textContent = 'Geen saldo, is je iq onder huis temperatuur ofzo?';
+  } else {
+    brainEl.textContent = 'Antwoord: ' + current.ans;
+    xp = Math.max(0, xp - 2);
+    saveState();
+    statusEl.textContent = 'Antwoord getoond (-2 XP). Nieuwe som komt zo';
+    setTimeout(() => {
+      genProblem();
+    }, 1200);
+  }
+});
+
+
+
 
     window.addEventListener('load', ()=>{
       if(operator) genProblem(); else equationEl.textContent = 'Kies "+", "−" of "×" om te beginnen.';
