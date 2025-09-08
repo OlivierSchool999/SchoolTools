@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rekensprint uit china.com</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #f4f7fb;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .operator-buttons button,
+    #submitBtn, #showBtn {
+      padding: 10px 16px;
+      margin: 5px;
+      font-size: 18px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      background: white;
+    }
+    #equation {
+      font-size: 24px;
+      margin: 15px 0;
+    }
+    #answer {
+      padding: 8px;
+      font-size: 18px;
+      width: 150px;
+      text-align: center;
+    }
+    #status {
+      margin-top: 10px;
+      min-height: 20px;
+    }
+    #brain {
+      margin-top: 5px;
+      font-weight: bold;
+    }
+    #xpVal {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Rekensprint uit china.com</h1>
+  <p>Kies eerst: plus, min of keer. Antwoord goed → nieuwe som en XP!</p>
+
+  <div class="operator-buttons">
+    <button id="plusBtn">+</button>
+    <button id="minBtn">−</button>
+    <button id="keerBtn">×</button>
+  </div>
+
+  <div id="equation">—</div>
+  <input id="answer" placeholder="Typ je antwoord en druk Enter" />
+  <div>
+    <button id="submitBtn">Controleer</button>
+    <button id="showBtn">Laat antwoord zien</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="brain"></div>
+  <div>XP: <span id="xpVal">0</span></div>
+  <p>XP: +5 voor +, +10 voor −, +20 voor ×. -2 als je het antwoord toont.</p>
+
+  <script>
+    function setCookie(name, value, days) {
+      const d = new Date(); d.setTime(d.getTime() + (days||365)*24*60*60*1000);
+      document.cookie = name + '=' + encodeURIComponent(value) + ';path=/;expires=' + d.toUTCString();
+    }
+    function getCookie(name) {
+      const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+      return v ? decodeURIComponent(v.pop()) : null;
+    }
+
+    const plusBtn = document.getElementById('plusBtn');
+    const minBtn = document.getElementById('minBtn');
+    const keerBtn = document.getElementById('keerBtn');
+    const equationEl = document.getElementById('equation');
+    const answerInput = document.getElementById('answer');
+    const submitBtn = document.getElementById('submitBtn');
+    const showBtn = document.getElementById('showBtn');
+    const statusEl = document.getElementById('status');
+    const brainEl = document.getElementById('brain');
+    const xpVal = document.getElementById('xpVal');
+
+    let operator = getCookie('rs_operator') || null;
+    let xp = parseInt(getCookie('rs_xp') || '0', 10);
+    xpVal.textContent = xp;
+
+    function saveState(){
+      setCookie('rs_operator', operator || '', 365);
+      setCookie('rs_xp', String(xp), 365);
+      xpVal.textContent = xp;
+    }
+
+    function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min }
+
+    let current = {a:0,b:0,op:'+',ans:0};
+
+    function genProblem(){
+      if(!operator){ equationEl.textContent = 'Kies eerst een operator.'; return; }
+      let a = randInt(1,99);
+      let b = randInt(1,99);
+      if(operator === 'x'){
+        a = randInt(2,12);
+        b = randInt(2,12);
+      }
+      let opChar = operator === 'x' ? '×' : operator === '-' ? '−' : '+';
+      let ans;
+      if(operator === '+') ans = a + b;
+      else if(operator === '-') ans = a - b;
+      else ans = a * b;
+      current = {a,b,op:operator,ans};
+      equationEl.textContent = `${a} ${opChar} ${b} = ?`;
+      statusEl.textContent = '';
+      brainEl.textContent = '';
+      answerInput.value = '';
+      answerInput.focus();
+    }
+
+    function awardXPFor(op){ if(op === '+') return 5; if(op === '-') return 10; return 20 }
+
+    function checkAnswer(){
+      const raw = answerInput.value.trim();
+      if(raw === ''){ statusEl.textContent = 'Typ eerst een antwoord.'; return; }
+      const given = Number(raw);
+      if(Number.isNaN(given)) { statusEl.textContent = 'Gebruik alleen cijfers.'; return; }
+      if(given === current.ans){
+        const delta = awardXPFor(current.op);
+        xp += delta;
+        saveState();
+        statusEl.textContent = 'Goed gedaan! +'+delta+' XP';
+        brainEl.textContent = 'Antwoord: ' + current.ans;
+        setTimeout(()=>{ genProblem(); }, 900);
+      } else {
+        statusEl.textContent = 'Niet juist — probeer opnieuw of laat het antwoord zien.';
+        brainEl.textContent = '';
+      }
+    }
+
+    plusBtn.addEventListener('click', ()=>{ operator = '+'; saveState(); genProblem(); });
+    minBtn.addEventListener('click', ()=>{ operator = '-'; saveState(); genProblem(); });
+    keerBtn.addEventListener('click', ()=>{ operator = 'x'; saveState(); genProblem(); });
+
+    submitBtn.addEventListener('click', checkAnswer);
+    answerInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') checkAnswer(); });
+
+    showBtn.addEventListener('click', ()=>{
+      brainEl.textContent = 'Antwoord: ' + current.ans;
+      xp = Math.max(0, xp - 2);
+      saveState();
+      statusEl.textContent = 'Antwoord getoond (-2 XP). Nieuwe som komt zo';
+      setTimeout(()=>{ genProblem(); }, 1200);
+    });
+
+    window.addEventListener('load', ()=>{
+      if(operator) genProblem(); else equationEl.textContent = 'Kies "+", "−" of "×" om te beginnen.';
+    });
+  </script>
+</body>
+</html>
