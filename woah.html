@@ -8,20 +8,39 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      background-color: white; /* Looks like a blank document */
+      background-color: white;
     }
 
-    #mc-frame {
+    #container {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      border: none;
-      display: none; /* Hidden by default */
+      display: none; /* Hidden until Shift+M */
       z-index: 9999;
+      background: white;
     }
+
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10000;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    }
+
+    #mc-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
   </style>
+
   <script>
     function updateTitleWithTime() {
       const now = new Date();
@@ -31,16 +50,34 @@
     setInterval(updateTitleWithTime, 1000);
     window.onload = updateTitleWithTime;
 
-    // Secret toggle: Shift + M to show/hide Minecraft
+    // Toggle visibility with Shift + M
     window.addEventListener('keydown', function(e) {
       if (e.shiftKey && e.key.toLowerCase() === 'm') {
-        const iframe = document.getElementById('mc-frame');
-        iframe.style.display = iframe.style.display === 'none' ? 'block' : 'none';
+        const container = document.getElementById('container');
+        container.style.display = container.style.display === 'none' ? 'block' : 'none';
       }
     });
+
+    // Change iframe URL
+    function loadCustomURL() {
+      const newURL = document.getElementById('url-input').value.trim();
+      if (newURL.length > 0) {
+        document.getElementById('mc-frame').src = newURL;
+      }
+    }
   </script>
 </head>
+
 <body>
-  <iframe id="mc-frame" src="https://classic.minecraft.net" allow="fullscreen"></iframe>
+
+  <div id="container">
+    <div id="controls">
+      <input id="url-input" type="text" placeholder="Enter URL..." size="40">
+      <button onclick="loadCustomURL()">Load</button>
+    </div>
+
+    <iframe id="mc-frame" src="https://classic.minecraft.net" allow="fullscreen"></iframe>
+  </div>
+
 </body>
 </html>
