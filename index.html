@@ -12,8 +12,6 @@ body {
     background-image: url("https://occ-0-8407-2218.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABdvo1_fD3KWn1lbYArDAnnkqcDefoXlbV6S_C_mWnjXB0Tq9X2eTf-MJHmXq0PAcMXa0aRjPByO2RLfVPMmpR3W1IxWwTk8W9aw9.jpg?r=6ac");
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
     font-family: Arial, sans-serif;
     color: white;
     overflow: hidden;
@@ -47,10 +45,7 @@ body::before {
     animation: staticMove 0.2s infinite;
 }
 
-@keyframes staticMove {
-    from {background-position:0 0;}
-    to {background-position:100px 100px;}
-}
+@keyframes staticMove { from {background-position:0 0;} to {background-position:100px 100px;} }
 
 /* SCANLINES */
 .scanlines {
@@ -81,41 +76,13 @@ body::before {
     z-index: 3;
 }
 
-/* DIGIT CONTAINER */
 .digit {
-    position: relative;
     width: 34px;
     height: 70px;
-    overflow: hidden;
-}
-
-.digit span {
-    position: absolute;
-    width: 100%;
-    text-align: center;
-    top: 0;
-    left: 0;
-    transform: translateY(0);
-}
-
-/* OLD SLIDE DOWN */
-.roll-old {
-    animation: rollDown 0.35s forwards;
-}
-
-/* NEW SLIDE UP */
-.roll-new {
-    animation: rollUp 0.35s forwards;
-}
-
-@keyframes rollDown {
-    0% {transform: translateY(0%); opacity:1;}
-    100% {transform: translateY(100%); opacity:0;}
-}
-
-@keyframes rollUp {
-    0% {transform: translateY(-100%); opacity:0;}
-    100% {transform: translateY(0%); opacity:1;}
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
 /* NIGHT SHAKE */
@@ -124,11 +91,11 @@ body::before {
 }
 
 @keyframes shake {
-    0% {transform: translate(-50%,-50%);}
-    25% {transform: translate(-49%,-51%);}
-    50% {transform: translate(-51%,-49%);}
-    75% {transform: translate(-49%,-49%);}
-    100% {transform: translate(-50%,-50%);}
+    0% { transform: translate(-50%,-50%);}
+    25% { transform: translate(-49%,-51%);}
+    50% { transform: translate(-51%,-49%);}
+    75% { transform: translate(-49%,-49%);}
+    100% { transform: translate(-50%,-50%);}
 }
 
 /* INPUT */
@@ -156,9 +123,24 @@ body::before {
 }
 #applyButton:hover { background:#7a0000; }
 
+/* GLITCH SHARDS */
+.glitch-shard {
+    position: fixed;
+    color: #ff2a2a;
+    text-shadow: 0 0 15px rgba(255,0,0,0.8);
+    font-weight: bold;
+    opacity: 1;
+    animation: fall 1s linear forwards;
+}
+
+@keyframes fall {
+    0% { transform: translateY(-50px) rotate(0deg); opacity:1; }
+    100% { transform: translateY(100vh) rotate(var(--rotate, 15deg)); opacity:0; }
+}
 </style>
 </head>
 <body>
+
 <div class="static"></div>
 <div class="scanlines"></div>
 
@@ -170,75 +152,76 @@ body::before {
 </div>
 
 <script>
-let previousTime = "";
 let customTitle = "";
 
-// Create digit element
+// create a digit element
 function createDigit(char){
     const d = document.createElement("div");
     d.className = "digit";
-    const s = document.createElement("span");
-    s.textContent = char;
-    d.appendChild(s);
+    d.textContent = char;
     return d;
 }
 
-// Apply custom title
-function applyCustomTitle(){
-    customTitle = document.getElementById("titleInput").value;
-    updateTime();
-}
-
-// Update time every second
+// update clock normally
 function updateTime(){
     const now = new Date();
     const timeString = now.toLocaleTimeString();
     const clock = document.getElementById("clock");
+    clock.innerHTML = "";
+    [...timeString].forEach(c => clock.appendChild(createDigit(c)));
 
-    if(!previousTime){
-        clock.innerHTML = "";
-        [...timeString].forEach(c => clock.appendChild(createDigit(c)));
-    } else {
-        [...timeString].forEach((char,i)=>{
-            const digit = clock.children[i];
-            const oldSpan = digit.querySelector("span");
-
-            if(oldSpan.textContent !== char){
-                const newSpan = document.createElement("span");
-                newSpan.textContent = char;
-
-                oldSpan.classList.add("roll-old");
-                newSpan.classList.add("roll-new");
-
-                digit.appendChild(newSpan);
-
-                // Remove old after animation
-                setTimeout(()=> oldSpan.remove(), 350);
-            }
-        });
-    }
-
-    // Night shake
     const h = now.getHours();
-    clock.classList.toggle("night-shake", h >= 0 && h <= 5);
+    clock.classList.toggle("night-shake", h>=0 && h<=5);
 
-    // Title
     if(customTitle.includes("%time%")){
         document.title = customTitle.replace("%time%", timeString);
     } else {
         document.title = customTitle || timeString;
     }
-
-    previousTime = timeString;
 }
 
-// Event listener
+// apply custom title
+function applyCustomTitle(){
+    customTitle = document.getElementById("titleInput").value;
+    updateTime();
+}
+
+// glitch one random digit with shards
+function glitchRandomDigit(){
+    const clock = document.getElementById("clock");
+    if(clock.children.length === 0) return;
+
+    const index = Math.floor(Math.random() * clock.children.length);
+    const digit = clock.children[index];
+    const char = digit.textContent;
+
+    const rect = digit.getBoundingClientRect();
+
+    const shardsCount = Math.floor(Math.random() * 3) + 4;
+    for(let i=0; i<shardsCount; i++){
+        const shard = document.createElement("div");
+        shard.className = "glitch-shard";
+        shard.textContent = char;
+
+        shard.style.left = rect.left + (Math.random()*rect.width - rect.width/2) + "px";
+        shard.style.top = rect.top + "px";
+        shard.style.fontSize = rect.height/2 + "px";
+        shard.style.setProperty('--rotate', (Math.random()*40-20) + "deg");
+        shard.style.animationDelay = (i*0.05) + "s";
+
+        document.body.appendChild(shard);
+        setTimeout(()=> shard.remove(), 1000);
+    }
+}
+
+// event listener
 document.getElementById("applyButton").addEventListener("click", applyCustomTitle);
 
-// Start clock
+// start clock
 window.onload = ()=>{
     updateTime();
     setInterval(updateTime, 1000);
+    setInterval(glitchRandomDigit, 10000);
 };
 </script>
 </body>
