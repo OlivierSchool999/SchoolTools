@@ -9,58 +9,9 @@
 body {
     margin: 0;
     height: 100vh;
-    background-image: url("https://occ-0-8407-2218.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABdvo1_fD3KWn1lbYArDAnnkqcDefoXlbV6S_C_mWnjXB0Tq9X2eTf-MJHmXq0PAcMXa0aRjPByO2RLfVPMmpR3W1IxWwTk8W9aw9.jpg?r=6ac");
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    background: black;
     font-family: Arial, sans-serif;
-    color: white;
     overflow: hidden;
-}
-
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(circle, rgba(0,0,0,0.4), rgba(0,0,0,0.95));
-    animation: flicker 6s infinite;
-    z-index: 0;
-}
-
-@keyframes flicker {
-    0%,100%{opacity:1;}
-    96%{opacity:.7;}
-    97%{opacity:.4;}
-    98%{opacity:.8;}
-}
-
-.static {
-    position: fixed;
-    inset: 0;
-    background-image: url("https://i.imgur.com/8pQeKxT.png");
-    opacity: 0.05;
-    z-index: 1;
-    pointer-events: none;
-    animation: staticMove .2s infinite;
-}
-
-@keyframes staticMove {
-    from{background-position:0 0;}
-    to{background-position:100px 100px;}
-}
-
-.scanlines {
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-        to bottom,
-        rgba(0,0,0,0.15),
-        rgba(0,0,0,0.15) 1px,
-        transparent 2px,
-        transparent 4px
-    );
-    z-index: 2;
-    pointer-events: none;
 }
 
 /* CLOCK */
@@ -73,11 +24,10 @@ body::before {
     gap: 3px;
     font-size: 56px;
     color: #ff2a2a;
-    text-shadow: 0 0 15px rgba(255,0,0,0.8);
-    z-index: 3;
+    text-shadow: 0 0 12px rgba(255,0,0,0.7);
 }
 
-/* DIGITS */
+/* DIGIT SLOT */
 .digit {
     position: relative;
     width: 34px;
@@ -85,153 +35,120 @@ body::before {
     overflow: hidden;
 }
 
+/* DIGIT TEXT */
 .digit span {
     position: absolute;
     width: 100%;
     top: 0;
     left: 0;
     text-align: center;
+    transform: translateY(0);
 }
 
-/* SLOT ANIMATION */
+/* OLD GOES DOWN */
 .roll-old {
-    animation: rollDown .35s ease-in forwards;
+    animation: rollDown 0.35s ease-in forwards;
 }
 
+/* NEW COMES FROM TOP */
 .roll-new {
-    animation: rollUp .35s ease-out forwards;
+    animation: rollUp 0.35s ease-out forwards;
 }
 
+/* ANIMATIONS */
 @keyframes rollDown {
-    from { transform: translateY(0); opacity: 1; filter: blur(0); }
-    to   { transform: translateY(100%); opacity: 0; filter: blur(4px); }
+    from {
+        transform: translateY(0%);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
 }
 
 @keyframes rollUp {
-    from { transform: translateY(-100%); opacity: 0; filter: blur(4px); }
-    to   { transform: translateY(0); opacity: 1; filter: blur(0); }
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0%);
+        opacity: 1;
+    }
 }
 
 /* NIGHT SHAKE */
 .night-shake {
-    animation: shake .25s infinite;
+    animation: shake 0.3s infinite;
 }
 
 @keyframes shake {
-    0%{transform:translate(-50%,-50%)}
-    25%{transform:translate(-49%,-51%)}
-    50%{transform:translate(-51%,-49%)}
-    75%{transform:translate(-49%,-49%)}
-    100%{transform:translate(-50%,-50%)}
+    0% { transform: translate(-50%,-50%); }
+    25% { transform: translate(-49%,-51%); }
+    50% { transform: translate(-51%,-49%); }
+    75% { transform: translate(-49%,-49%); }
+    100% { transform: translate(-50%,-50%); }
 }
-
-/* GLITCH EFFECT */
-.glitch {
-    animation: glitch .12s steps(2) infinite;
-}
-
-@keyframes glitch {
-    0% {
-        text-shadow:
-            -2px 0 red,
-            2px 0 cyan;
-    }
-    100% {
-        text-shadow:
-            2px 0 red,
-            -2px 0 cyan;
-    }
-}
-
-/* INPUT */
-.input-container {
-    position: absolute;
-    top: 65%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 3;
-}
-
-#titleInput {
-    padding: 8px;
-    background: rgba(0,0,0,0.7);
-    border: 1px solid #ff2a2a;
-    color: white;
-}
-
-#applyButton {
-    padding: 8px 14px;
-    background: #400000;
-    border: 1px solid #ff2a2a;
-    color: white;
-    cursor: pointer;
-}
-#applyButton:hover { background:#7a0000; }
 </style>
 
 <script>
 let previousTime = "";
-let customTitle = "";
 
 function createDigit(char) {
     const d = document.createElement("div");
     d.className = "digit";
+
     const s = document.createElement("span");
     s.textContent = char;
+
     d.appendChild(s);
     return d;
 }
 
 function updateTime() {
     const now = new Date();
-    const timeString = now.toLocaleTimeString();
+    const time = now.toLocaleTimeString();
     const clock = document.getElementById("clock");
 
+    // First render
     if (!previousTime) {
         clock.innerHTML = "";
-        [...timeString].forEach(c => clock.appendChild(createDigit(c)));
-    } else {
-        [...timeString].forEach((char, i) => {
-            const digit = clock.children[i];
-            const oldSpan = digit.querySelector("span");
-
-            if (oldSpan.textContent !== char) {
-                const newSpan = document.createElement("span");
-                newSpan.textContent = char;
-
-                oldSpan.classList.add("roll-old");
-                newSpan.classList.add("roll-new");
-
-                digit.appendChild(newSpan);
-
-                setTimeout(() => oldSpan.remove(), 350);
-            }
-        });
+        [...time].forEach(c => clock.appendChild(createDigit(c)));
+        previousTime = time;
+        return;
     }
+
+    // Update digits
+    [...time].forEach((char, i) => {
+        const digit = clock.children[i];
+        const oldSpan = digit.querySelector("span");
+
+        if (oldSpan.textContent !== char) {
+            const newSpan = document.createElement("span");
+            newSpan.textContent = char;
+
+            // FORCE starting positions
+            newSpan.style.transform = "translateY(-100%)";
+            oldSpan.style.transform = "translateY(0%)";
+
+            oldSpan.classList.add("roll-old");
+            newSpan.classList.add("roll-new");
+
+            digit.appendChild(newSpan);
+
+            setTimeout(() => {
+                oldSpan.remove();
+            }, 350);
+        }
+    });
 
     // Night shake
     const h = now.getHours();
     clock.classList.toggle("night-shake", h >= 0 && h <= 5);
 
-    // Random glitch chance
-    if (Math.random() < 0.12) {
-        clock.classList.add("glitch");
-        setTimeout(() => clock.classList.remove("glitch"), 150);
-    }
-
-    // Title
-    if (customTitle.includes("%time%")) {
-        document.title = customTitle.replace("%time%", timeString);
-    } else {
-        document.title = customTitle || timeString;
-    }
-
-    previousTime = timeString;
-}
-
-function applyCustomTitle() {
-    customTitle = titleInput.value;
-    updateTime();
+    document.title = time;
+    previousTime = time;
 }
 
 window.onload = () => {
@@ -242,14 +159,6 @@ window.onload = () => {
 </head>
 
 <body>
-<div class="static"></div>
-<div class="scanlines"></div>
-
 <div id="clock"></div>
-
-<div class="input-container">
-    <input id="titleInput" placeholder="hes watching">
-    <button id="applyButton" onclick="applyCustomTitle()">Apply</button>
-</div>
 </body>
 </html>
