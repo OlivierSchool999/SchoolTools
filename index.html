@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Clock</title>
-
 <style>
 body {
     margin: 0;
@@ -21,16 +20,16 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
-    gap: 3px;
+    gap: 4px;
     font-size: 56px;
     color: #ff2a2a;
-    text-shadow: 0 0 12px rgba(255,0,0,0.7);
+    text-shadow: 0 0 15px rgba(255,0,0,0.7);
 }
 
 /* DIGIT SLOT */
 .digit {
     position: relative;
-    width: 34px;
+    width: 40px;
     height: 70px;
     overflow: hidden;
 }
@@ -39,43 +38,31 @@ body {
 .digit span {
     position: absolute;
     width: 100%;
+    text-align: center;
     top: 0;
     left: 0;
-    text-align: center;
     transform: translateY(0);
 }
 
-/* OLD GOES DOWN */
+/* OLD SLIDE DOWN */
 .roll-old {
-    animation: rollDown 0.35s ease-in forwards;
+    animation: rollDown 0.35s forwards;
 }
 
-/* NEW COMES FROM TOP */
+/* NEW SLIDE UP */
 .roll-new {
-    animation: rollUp 0.35s ease-out forwards;
+    animation: rollUp 0.35s forwards;
 }
 
 /* ANIMATIONS */
 @keyframes rollDown {
-    from {
-        transform: translateY(0%);
-        opacity: 1;
-    }
-    to {
-        transform: translateY(100%);
-        opacity: 0;
-    }
+    0%   { transform: translateY(0%); opacity:1; }
+    100% { transform: translateY(100%); opacity:0; }
 }
 
 @keyframes rollUp {
-    from {
-        transform: translateY(-100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0%);
-        opacity: 1;
-    }
+    0%   { transform: translateY(-100%); opacity:0; }
+    100% { transform: translateY(0%); opacity:1; }
 }
 
 /* NIGHT SHAKE */
@@ -91,21 +78,26 @@ body {
     100% { transform: translate(-50%,-50%); }
 }
 </style>
+</head>
+<body>
+<div id="clock"></div>
 
 <script>
 let previousTime = "";
 
+// Create initial digit container
 function createDigit(char) {
-    const d = document.createElement("div");
-    d.className = "digit";
+    const digit = document.createElement("div");
+    digit.className = "digit";
 
-    const s = document.createElement("span");
-    s.textContent = char;
+    const span = document.createElement("span");
+    span.textContent = char;
+    digit.appendChild(span);
 
-    d.appendChild(s);
-    return d;
+    return digit;
 }
 
+// Update the clock
 function updateTime() {
     const now = new Date();
     const time = now.toLocaleTimeString();
@@ -128,22 +120,21 @@ function updateTime() {
             const newSpan = document.createElement("span");
             newSpan.textContent = char;
 
-            // FORCE starting positions
-            newSpan.style.transform = "translateY(-100%)";
-            oldSpan.style.transform = "translateY(0%)";
-
+            // Add animation classes
             oldSpan.classList.add("roll-old");
             newSpan.classList.add("roll-new");
 
+            // Append new span to container
             digit.appendChild(newSpan);
 
+            // Remove old span after animation
             setTimeout(() => {
                 oldSpan.remove();
             }, 350);
         }
     });
 
-    // Night shake
+    // Night shake effect
     const h = now.getHours();
     clock.classList.toggle("night-shake", h >= 0 && h <= 5);
 
@@ -151,14 +142,11 @@ function updateTime() {
     previousTime = time;
 }
 
+// Run clock
 window.onload = () => {
     updateTime();
     setInterval(updateTime, 1000);
 };
 </script>
-</head>
-
-<body>
-<div id="clock"></div>
 </body>
 </html>
