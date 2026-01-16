@@ -12,7 +12,6 @@ body {
     background-image: url("https://occ-0-8407-2218.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABdvo1_fD3KWn1lbYArDAnnkqcDefoXlbV6S_C_mWnjXB0Tq9X2eTf-MJHmXq0PAcMXa0aRjPByO2RLfVPMmpR3W1IxWwTk8W9aw9.jpg?r=6ac");
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
     background-attachment: fixed;
     font-family: Arial, sans-serif;
     color: white;
@@ -24,16 +23,15 @@ body::before {
     position: fixed;
     inset: 0;
     background: radial-gradient(circle, rgba(0,0,0,0.4), rgba(0,0,0,0.95));
-    z-index: 0;
     animation: flicker 6s infinite;
+    z-index: 0;
 }
 
 @keyframes flicker {
     0%,100%{opacity:1;}
-    95%{opacity:.85;}
-    96%{opacity:.6;}
-    97%{opacity:.9;}
-    98%{opacity:.4;}
+    96%{opacity:.7;}
+    97%{opacity:.4;}
+    98%{opacity:.8;}
 }
 
 .static {
@@ -71,27 +69,27 @@ body::before {
     top: 45%;
     left: 50%;
     transform: translate(-50%, -50%);
+    display: flex;
+    gap: 3px;
     font-size: 56px;
     color: #ff2a2a;
     text-shadow: 0 0 15px rgba(255,0,0,0.8);
     z-index: 3;
-    display: flex;
-    gap: 2px;
 }
 
-/* DIGIT CONTAINER */
+/* DIGITS */
 .digit {
     position: relative;
     width: 34px;
     height: 70px;
     overflow: hidden;
-    display: inline-block;
 }
 
 .digit span {
     position: absolute;
+    width: 100%;
+    top: 0;
     left: 0;
-    right: 0;
     text-align: center;
 }
 
@@ -116,7 +114,7 @@ body::before {
 
 /* NIGHT SHAKE */
 .night-shake {
-    animation: shake .3s infinite;
+    animation: shake .25s infinite;
 }
 
 @keyframes shake {
@@ -125,6 +123,24 @@ body::before {
     50%{transform:translate(-51%,-49%)}
     75%{transform:translate(-49%,-49%)}
     100%{transform:translate(-50%,-50%)}
+}
+
+/* GLITCH EFFECT */
+.glitch {
+    animation: glitch .12s steps(2) infinite;
+}
+
+@keyframes glitch {
+    0% {
+        text-shadow:
+            -2px 0 red,
+            2px 0 cyan;
+    }
+    100% {
+        text-shadow:
+            2px 0 red,
+            -2px 0 cyan;
+    }
 }
 
 /* INPUT */
@@ -150,10 +166,7 @@ body::before {
     color: white;
     cursor: pointer;
 }
-
-#applyButton:hover {
-    background: #7a0000;
-}
+#applyButton:hover { background:#7a0000; }
 </style>
 
 <script>
@@ -174,7 +187,7 @@ function updateTime() {
     const timeString = now.toLocaleTimeString();
     const clock = document.getElementById("clock");
 
-    if (previousTime === "") {
+    if (!previousTime) {
         clock.innerHTML = "";
         [...timeString].forEach(c => clock.appendChild(createDigit(c)));
     } else {
@@ -191,33 +204,33 @@ function updateTime() {
 
                 digit.appendChild(newSpan);
 
-                setTimeout(() => {
-                    digit.removeChild(oldSpan);
-                }, 350);
+                setTimeout(() => oldSpan.remove(), 350);
             }
         });
     }
 
-    const hour = now.getHours();
-    if (hour >= 0 && hour <= 5) {
-        clock.classList.add("night-shake");
-    } else {
-        clock.classList.remove("night-shake");
+    // Night shake
+    const h = now.getHours();
+    clock.classList.toggle("night-shake", h >= 0 && h <= 5);
+
+    // Random glitch chance
+    if (Math.random() < 0.12) {
+        clock.classList.add("glitch");
+        setTimeout(() => clock.classList.remove("glitch"), 150);
     }
 
+    // Title
     if (customTitle.includes("%time%")) {
         document.title = customTitle.replace("%time%", timeString);
-    } else if (customTitle) {
-        document.title = customTitle;
     } else {
-        document.title = timeString;
+        document.title = customTitle || timeString;
     }
 
     previousTime = timeString;
 }
 
 function applyCustomTitle() {
-    customTitle = document.getElementById("titleInput").value;
+    customTitle = titleInput.value;
     updateTime();
 }
 
