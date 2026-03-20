@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPVIZ — Now Playing</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1DB954;
+    --black: #0a0a0a;
+    --dark: #111111;
+    --card: #161616;
+    --border: #2a2a2a;
+    --muted: #555;
+    --text: #e8e8e8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Subtle noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 520px;
+    padding: 24px;
+  }
+
+  /* ---- AUTH SCREEN ---- */
+  #auth-screen {
+    text-align: center;
+  }
+
+  .logo-tag {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+
+  .logo-tag span { color: var(--green); }
+
+  .auth-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 6vw, 3rem);
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .auth-sub {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+    margin-bottom: 40px;
+  }
+
+  .connect-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--green);
+    color: #000;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 14px 28px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .connect-btn:hover {
+    background: #1ed760;
+    transform: translateY(-2px);
+  }
+
+  .connect-btn svg { width: 18px; height: 18px; }
+
+  .setup-note {
+    margin-top: 32px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.9;
+    text-align: left;
+  }
+
+  .setup-note strong { color: var(--text); }
+
+  .config-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .config-inputs input {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .config-inputs input:focus { border-color: var(--green); }
+  .config-inputs input::placeholder { color: var(--muted); }
+
+  /* ---- PLAYER SCREEN ---- */
+  #player-screen { display: none; }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .site-label {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  .status-dot.live {
+    background: var(--green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .status-text { font-size: 10px; color: var(--muted); }
+
+  /* Album art */
+  .art-container {
+    position: relative;
+    margin-bottom: 28px;
+  }
+
+  .art-frame {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .art-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.4s ease;
+  }
+
+  .art-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    opacity: 0.15;
+  }
+
+  /* Visualizer bars overlaid on bottom of art */
+  .viz-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    padding: 0 12px 8px;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+  }
+
+  .bar {
+    flex: 1;
+    background: var(--green);
+    min-height: 3px;
+    border-radius: 2px 2px 0 0;
+    transform-origin: bottom;
+    opacity: 0.9;
+  }
+
+  /* Track info */
+  .track-info {
+    margin-bottom: 20px;
+  }
+
+  .track-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .artist-name {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .album-name {
+    font-size: 11px;
+    color: #3a3a3a;
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    margin-bottom: 20px;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    width: 0%;
+    transition: width 0.5s linear;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+  }
+
+  .time-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* Playback controls display */
+  .controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .ctrl-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.4;
+    fill: var(--text);
+  }
+
+  .ctrl-icon.active { opacity: 1; fill: var(--green); }
+
+  .play-state {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .play-state.playing { color: var(--green); }
+
+  /* Standalone big visualizer */
+  .viz-standalone {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 56px;
+    margin-bottom: 0;
+  }
+
+  .viz-standalone .bar {
+    flex: 1;
+  }
+
+  /* Not playing state */
+  .idle-msg {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 2;
+  }
+
+  /* Error toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #c0392b;
+    color: #fff;
+    font-size: 11px;
+    padding: 10px 20px;
+    transition: transform 0.3s ease;
+    z-index: 100;
+    max-width: 400px;
+    text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .disconnect-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .disconnect-btn:hover { border-color: #c0392b; color: #c0392b; }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen">
+    <div class="logo-tag">SP<span>VIZ</span> — Spotify Visualizer</div>
+    <h1 class="auth-title">YOUR MUSIC.<br>VISUALIZED.</h1>
+    <p class="auth-sub">Real-time now-playing display with<br>animated frequency bars. Plug in your<br>Spotify app credentials to start.</p>
+
+    <div class="config-inputs">
+      <input type="text" id="client-id-input" placeholder="Client ID (from developer.spotify.com)" />
+      <input type="text" id="redirect-input" placeholder="Redirect URI (e.g. http://localhost or this page URL)" />
+    </div>
+
+    <a href="#" class="connect-btn" id="auth-btn" onclick="startAuth(event)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+      Connect Spotify
+    </a>
+
+    <div class="setup-note">
+      <strong>Setup (2 min):</strong><br>
+      1. Go to <strong>developer.spotify.com/dashboard</strong><br>
+      2. Create an app → copy the <strong>Client ID</strong><br>
+      3. Add this page's URL as a <strong>Redirect URI</strong><br>
+      4. Paste both above and hit Connect
+    </div>
+  </div>
+
+  <!-- PLAYER SCREEN -->
+  <div id="player-screen">
+    <div class="header-row">
+      <div class="site-label">SPVIZ</div>
+      <div>
+        <span class="status-dot" id="status-dot"></span>
+        <span class="status-text" id="status-text">connecting...</span>
+        <button class="disconnect-btn" onclick="disconnect()" style="margin-left:12px">logout</button>
+      </div>
+    </div>
+
+    <div id="now-playing">
+      <div class="art-container">
+        <div class="art-frame" id="art-frame">
+          <div class="art-placeholder" id="art-placeholder">♫</div>
+          <img id="album-art" src="" alt="" style="display:none;position:absolute;inset:0;" />
+        </div>
+        <div class="viz-overlay" id="viz-overlay"></div>
+      </div>
+
+      <div class="track-info">
+        <div class="track-name" id="track-name">—</div>
+        <div class="artist-name" id="artist-name">—</div>
+        <div class="album-name" id="album-name"></div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="time-row">
+          <span id="time-current">0:00</span>
+          <span id="time-total">0:00</span>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <!-- Shuffle -->
+        <svg class="ctrl-icon" id="icon-shuffle" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        <!-- Prev -->
+        <svg class="ctrl-icon" viewBox="0 0 24 24" style="opacity:0.5"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        <!-- Play/Pause indicator -->
+        <div class="play-state" id="play-state">PAUSED</div>
+        <!-- Next -->
+        <svg class="ctrl-icon" viewBox="0 0 24 24" style="opacity:0.5"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        <!-- Repeat -->
+        <svg class="ctrl-icon" id="icon-repeat" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+      </div>
+
+      <!-- Big standalone viz bars -->
+      <div class="viz-standalone" id="viz-standalone"></div>
+    </div>
+
+    <div class="idle-msg" id="idle-msg" style="display:none">
+      Nothing playing right now.<br>
+      <span style="color:#333">Hit play on Spotify and this will update.</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIG & STATE
+// ─────────────────────────────────────────────
+const SCOPES = 'user-read-currently-playing user-read-playback-state';
+let accessToken = null;
+let refreshToken = null;
+let clientId = null;
+let redirectUri = null;
+let pollInterval = null;
+let progressInterval = null;
+let vizInterval = null;
+let currentTrack = null;
+let isPlaying = false;
+let progressMs = 0;
+let durationMs = 0;
+let barEls = { overlay: [], standalone: [] };
+
+// ─────────────────────────────────────────────
+//  PKCE helpers
+// ─────────────────────────────────────────────
+function randomBytes(n) {
+  return crypto.getRandomValues(new Uint8Array(n));
+}
+function base64url(buf) {
+  return btoa(String.fromCharCode(...buf))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function sha256(plain) {
+  const enc = new TextEncoder().encode(plain);
+  const hash = await crypto.subtle.digest('SHA-256', enc);
+  return base64url(new Uint8Array(hash));
+}
+function generateVerifier() {
+  return base64url(randomBytes(64));
+}
+
+// ─────────────────────────────────────────────
+//  AUTH FLOW
+// ─────────────────────────────────────────────
+async function startAuth(e) {
+  e.preventDefault();
+  clientId = document.getElementById('client-id-input').value.trim();
+  redirectUri = document.getElementById('redirect-input').value.trim();
+  if (!clientId || !redirectUri) {
+    showToast('Please enter both Client ID and Redirect URI');
+    return;
+  }
+  localStorage.setItem('spviz_client_id', clientId);
+  localStorage.setItem('spviz_redirect_uri', redirectUri);
+
+  const verifier = generateVerifier();
+  const challenge = await sha256(verifier);
+  localStorage.setItem('spviz_verifier', verifier);
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    response_type: 'code',
+    redirect_uri: redirectUri,
+    scope: SCOPES,
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+  });
+  window.location = 'https://accounts.spotify.com/authorize?' + params;
+}
+
+async function exchangeCode(code) {
+  const verifier = localStorage.getItem('spviz_verifier');
+  clientId = localStorage.getItem('spviz_client_id');
+  redirectUri = localStorage.getItem('spviz_redirect_uri');
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: redirectUri,
+    client_id: clientId,
+    code_verifier: verifier,
+  });
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  const data = await res.json();
+  if (data.access_token) {
+    accessToken = data.access_token;
+    refreshToken = data.refresh_token;
+    localStorage.setItem('spviz_access', accessToken);
+    localStorage.setItem('spviz_refresh', refreshToken);
+    const expiry = Date.now() + data.expires_in * 1000;
+    localStorage.setItem('spviz_expiry', expiry);
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+    return true;
+  }
+  return false;
+}
+
+async function refreshAccessToken() {
+  const rt = localStorage.getItem('spviz_refresh');
+  const cid = localStorage.getItem('spviz_client_id');
+  if (!rt || !cid) return false;
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: rt,
+    client_id: cid,
+  });
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  const data = await res.json();
+  if (data.access_token) {
+    accessToken = data.access_token;
+    localStorage.setItem('spviz_access', accessToken);
+    const expiry = Date.now() + data.expires_in * 1000;
+    localStorage.setItem('spviz_expiry', expiry);
+    return true;
+  }
+  return false;
+}
+
+async function ensureToken() {
+  const expiry = parseInt(localStorage.getItem('spviz_expiry') || '0');
+  if (Date.now() > expiry - 30000) {
+    return await refreshAccessToken();
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+//  SPOTIFY API
+// ─────────────────────────────────────────────
+async function fetchCurrentlyPlaying() {
+  await ensureToken();
+  const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+    headers: { Authorization: 'Bearer ' + accessToken },
+  });
+  if (res.status === 204) return null; // nothing playing
+  if (res.status === 401) { await refreshAccessToken(); return null; }
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function fetchPlaybackState() {
+  await ensureToken();
+  const res = await fetch('https://api.spotify.com/v1/me/player', {
+    headers: { Authorization: 'Bearer ' + accessToken },
+  });
+  if (res.status === 204 || !res.ok) return null;
+  return res.json();
+}
+
+// ─────────────────────────────────────────────
+//  UI UPDATE
+// ─────────────────────────────────────────────
+function formatMs(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const sec = String(s % 60).padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+function updateUI(data, state) {
+  const nowPlayingEl = document.getElementById('now-playing');
+  const idleEl = document.getElementById('idle-msg');
+  const dot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+
+  if (!data || !data.item) {
+    nowPlayingEl.style.display = 'none';
+    idleEl.style.display = 'block';
+    dot.className = 'status-dot';
+    statusText.textContent = 'nothing playing';
+    stopVisualizer();
+    return;
+  }
+
+  nowPlayingEl.style.display = 'block';
+  idleEl.style.display = 'none';
+
+  const item = data.item;
+  const playing = data.is_playing;
+  isPlaying = playing;
+  progressMs = data.progress_ms;
+  durationMs = item.duration_ms;
+
+  dot.className = 'status-dot' + (playing ? ' live' : '');
+  statusText.textContent = playing ? 'live' : 'paused';
+
+  // Track changed?
+  if (!currentTrack || currentTrack.id !== item.id) {
+    currentTrack = item;
+    document.getElementById('track-name').textContent = item.name;
+    document.getElementById('artist-name').textContent = item.artists.map(a => a.name).join(', ');
+    document.getElementById('album-name').textContent = item.album.name;
+
+    const artImg = document.getElementById('album-art');
+    const artPh = document.getElementById('art-placeholder');
+    const imgs = item.album.images;
+    if (imgs && imgs.length) {
+      artImg.src = imgs[0].url;
+      artImg.style.display = 'block';
+      artPh.style.display = 'none';
+    } else {
+      artImg.style.display = 'none';
+      artPh.style.display = 'flex';
+    }
+  }
+
+  // Progress
+  const pct = durationMs > 0 ? (progressMs / durationMs) * 100 : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('time-current').textContent = formatMs(progressMs);
+  document.getElementById('time-total').textContent = formatMs(durationMs);
+
+  // Playback state
+  const playStateEl = document.getElementById('play-state');
+  playStateEl.textContent = playing ? 'PLAYING' : 'PAUSED';
+  playStateEl.className = 'play-state' + (playing ? ' playing' : '');
+
+  // Shuffle / repeat icons from state
+  if (state) {
+    document.getElementById('icon-shuffle').className = 'ctrl-icon' + (state.shuffle_state ? ' active' : '');
+    const repeatActive = state.repeat_state !== 'off';
+    document.getElementById('icon-repeat').className = 'ctrl-icon' + (repeatActive ? ' active' : '');
+  }
+
+  // Visualizer
+  if (playing) {
+    startVisualizer();
+  } else {
+    stopVisualizer();
+  }
+}
+
+// ─────────────────────────────────────────────
+//  VISUALIZER
+// ─────────────────────────────────────────────
+const BAR_COUNT = 32;
+
+function buildBars() {
+  ['viz-overlay', 'viz-standalone'].forEach((id, idx) => {
+    const container = document.getElementById(id);
+    container.innerHTML = '';
+    const arr = [];
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.height = '3px';
+      container.appendChild(bar);
+      arr.push(bar);
+    }
+    if (idx === 0) barEls.overlay = arr;
+    else barEls.standalone = arr;
+  });
+}
+
+// Smooth random visualizer that pulses nicely
+let vizPhase = 0;
+let vizTargets = new Float32Array(BAR_COUNT).fill(3);
+let vizCurrent = new Float32Array(BAR_COUNT).fill(3);
+let vizAnimFrame = null;
+
+function animateBars() {
+  vizPhase += 0.04;
+  // Update targets occasionally
+  if (Math.random() < 0.25) {
+    const i = Math.floor(Math.random() * BAR_COUNT);
+    // Bell-curve-ish distribution — center bars taller
+    const center = BAR_COUNT / 2;
+    const dist = Math.abs(i - center) / center;
+    const maxH = 65 * (1 - dist * 0.5);
+    vizTargets[i] = Math.random() * maxH + 3;
+  }
+
+  // Wave overlay
+  for (let i = 0; i < BAR_COUNT; i++) {
+    const wave = Math.sin(vizPhase + i * 0.4) * 8;
+    const target = vizTargets[i] + wave;
+    vizCurrent[i] += (target - vizCurrent[i]) * 0.15;
+    const h = Math.max(3, vizCurrent[i]);
+
+    // Color: green to bright green based on height
+    const intensity = Math.min(h / 70, 1);
+    const r = Math.round(29 + intensity * 20);
+    const g = Math.round(185 + intensity * 40);
+    const b = Math.round(84 - intensity * 30);
+    const color = `rgb(${r},${g},${b})`;
+
+    barEls.overlay[i].style.height = h + 'px';
+    barEls.overlay[i].style.background = color;
+    barEls.standalone[i].style.height = h + 'px';
+    barEls.standalone[i].style.background = color;
+  }
+  vizAnimFrame = requestAnimationFrame(animateBars);
+}
+
+function startVisualizer() {
+  if (vizAnimFrame) return;
+  animateBars();
+}
+
+function stopVisualizer() {
+  if (vizAnimFrame) {
+    cancelAnimationFrame(vizAnimFrame);
+    vizAnimFrame = null;
+  }
+  // Rest bars
+  barEls.overlay.forEach(b => { b.style.height = '3px'; });
+  barEls.standalone.forEach(b => { b.style.height = '3px'; });
+}
+
+// ─────────────────────────────────────────────
+//  POLLING
+// ─────────────────────────────────────────────
+async function poll() {
+  try {
+    const [data, state] = await Promise.all([fetchCurrentlyPlaying(), fetchPlaybackState()]);
+    updateUI(data, state);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function startPolling() {
+  poll();
+  pollInterval = setInterval(poll, 3000);
+}
+
+// Smooth progress interpolation between polls
+function startProgressTick() {
+  progressInterval = setInterval(() => {
+    if (!isPlaying || durationMs === 0) return;
+    progressMs = Math.min(progressMs + 250, durationMs);
+    const pct = (progressMs / durationMs) * 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('time-current').textContent = formatMs(progressMs);
+  }, 250);
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+function showPlayer() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('player-screen').style.display = 'block';
+  buildBars();
+  startPolling();
+  startProgressTick();
+}
+
+function showAuth() {
+  document.getElementById('auth-screen').style.display = 'block';
+  document.getElementById('player-screen').style.display = 'none';
+}
+
+function disconnect() {
+  localStorage.removeItem('spviz_access');
+  localStorage.removeItem('spviz_refresh');
+  localStorage.removeItem('spviz_expiry');
+  clearInterval(pollInterval);
+  clearInterval(progressInterval);
+  stopVisualizer();
+  accessToken = null;
+  currentTrack = null;
+  showAuth();
+}
+
+function showToast(msg, dur = 4000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+async function init() {
+  // Pre-fill stored values
+  const stored_cid = localStorage.getItem('spviz_client_id');
+  const stored_ru = localStorage.getItem('spviz_redirect_uri');
+  if (stored_cid) document.getElementById('client-id-input').value = stored_cid;
+  if (stored_ru) document.getElementById('redirect-input').value = stored_ru;
+
+  // Check for auth code callback
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    const ok = await exchangeCode(code);
+    if (!ok) { showToast('Auth failed. Try again.'); showAuth(); return; }
+  }
+
+  // Check stored token
+  accessToken = localStorage.getItem('spviz_access');
+  if (accessToken) {
+    const ok = await ensureToken();
+    if (ok) { showPlayer(); return; }
+  }
+
+  showAuth();
+}
+
+init();
+</script>
+</body>
+</html>
