@@ -800,10 +800,24 @@ body::after {
 <script>
 // ─── STATE ───
 const SCOPES = 'user-read-currently-playing user-read-playback-state';
+const BAR_COUNT = 36;
 let accessToken = null, refreshToken = null, clientId = null, redirectUri = null;
 let pollInterval = null, vizAnimFrame = null;
 let currentTrack = null, isPlaying = false, progressMs = 0, durationMs = 0;
 let barEls = { overlay: [], standalone: [] };
+
+// ─── AUDIO ANALYSIS STATE ───
+let audioFeatures = null;
+let audioAnalysis = null;
+let lastBeatTime = 0;
+let beatInterval = 500;
+let currentEnergy = 0.5;
+let currentLoudness = -14;
+let segmentLoudnesses = new Float32Array(BAR_COUNT).fill(0.5);
+let beatFlash = 0;        // 0→1 spike on each beat, decays quickly
+let vizPhase = 0;
+let vizCurrent = new Float32Array(BAR_COUNT).fill(3);
+let vizTargets = new Float32Array(BAR_COUNT).fill(3);
 
 // ─── PKCE ───
 function randomBytes(n){ return crypto.getRandomValues(new Uint8Array(n)); }
@@ -866,7 +880,7 @@ async function ensureToken(){
   return true;
 }
 
-// ─── API ───
+// ─── SPOTIFY API ───
 async function fetchCurrentlyPlaying(){
   await ensureToken();
   const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing',{ headers:{ Authorization:'Bearer '+accessToken } });
@@ -883,6 +897,117 @@ async function fetchPlaybackState(){
   return res.json();
 }
 
+async function fetchAudioFeatures(trackId){
+  await ensureToken();
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/audio-features/${trackId}`,{ headers:{ Authorization:'Bearer '+accessToken } });
+    if(!res.ok) return null;
+    return res.json();
+  } catch(e){ return null; }
+}
+
+async function fetchAudioAnalysis(trackId){
+  await ensureToken();
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/audio-analysis/${trackId}`,{ headers:{ Authorization:'Bearer '+accessToken } });
+    if(!res.ok) return null;
+    return res.json();
+  } catch(e){ return null; }
+}
+
+// ─── AUDIO DATA PROCESSING ───
+
+// Build per-bar amplitude profile from segment loudness data.
+// Treats the song timeline as a "spectrum": bars on the left = early song,
+// bars on right = later song. Each bar's height ceiling is set by the
+// average loudness_max of segments that fall in that time window.
+// This means quiet passages make bars short, loud passages make them tall.
+function buildSegmentProfile(analysis, features){
+  const profile = new Float32Array(BAR_COUNT);
+  const e = features ? (features.energy || 0.5) : 0.5;
+
+  if(!analysis || !analysis.segments || analysis.segments.length < 2){
+    profile.fill(e * 0.8);
+    return profile;
+  }
+
+  const segs = analysis.segments;
+  const totalDur = analysis.track ? analysis.track.duration : (durationMs/1000);
+  const buckets = Array.from({length: BAR_COUNT}, ()=>({ sum:0, count:0 }));
+
+  segs.forEach(seg => {
+    const t = seg.start / totalDur;
+    const idx = Math.min(Math.floor(t * BAR_COUNT), BAR_COUNT - 1);
+    // loudness_max is in dB, typically -60 to 0. Normalize to 0-1.
+    const loudNorm = Math.max(0, Math.min(1, (seg.loudness_max + 50) / 50));
+    buckets[idx].sum += loudNorm;
+    buckets[idx].count++;
+  });
+
+  for(let i=0; i<BAR_COUNT; i++){
+    if(buckets[i].count > 0){
+      profile[i] = buckets[i].sum / buckets[i].count;
+    } else {
+      // Fill gaps by interpolating neighbors
+      const prev = i>0 ? profile[i-1] : e*0.6;
+      profile[i] = prev;
+    }
+    // Scale by track energy so an energetic track has higher bars overall
+    profile[i] *= (0.4 + e * 0.6);
+  }
+
+  return profile;
+}
+
+// Find current beat and segment from progressMs, resync lastBeatTime to wall clock
+function syncToProgress(){
+  if(!audioAnalysis) return;
+
+  const posS = progressMs / 1000;
+
+  // Beat sync
+  if(audioAnalysis.beats && audioAnalysis.beats.length > 0){
+    const beats = audioAnalysis.beats;
+    let lo=0, hi=beats.length-1;
+    while(lo<hi){ const mid=(lo+hi+1)>>1; if(beats[mid].start<=posS) lo=mid; else hi=mid-1; }
+    beatInterval = Math.max(200, (beats[lo].duration||0.5)*1000);
+    // Wall-clock time of current beat start = now - elapsed since beat started
+    const elapsedInBeat = (posS - beats[lo].start) * 1000;
+    lastBeatTime = performance.now() - elapsedInBeat;
+  } else if(audioFeatures && audioFeatures.tempo){
+    beatInterval = 60000 / audioFeatures.tempo;
+  }
+
+  // Segment loudness for right now
+  if(audioAnalysis.segments && audioAnalysis.segments.length > 0){
+    const segs = audioAnalysis.segments;
+    let lo=0, hi=segs.length-1;
+    while(lo<hi){ const mid=(lo+hi+1)>>1; if(segs[mid].start<=posS) lo=mid; else hi=mid-1; }
+    currentLoudness = segs[lo].loudness_max || -14;
+  }
+}
+
+// Called every frame: advance beat clock and fire beat flash when due
+function tickBeat(now){
+  const elapsed = now - lastBeatTime;
+  if(beatInterval > 0 && elapsed >= beatInterval){
+    // Beat fired! Trigger a flash spike
+    beatFlash = 1.0;
+    lastBeatTime += beatInterval; // advance by one beat interval
+    // If we're very behind (e.g. tab was hidden), catch up
+    if(now - lastBeatTime > beatInterval * 2) lastBeatTime = now;
+  }
+  // Decay beat flash quickly (half-life ~80ms for snappy punch)
+  beatFlash *= 0.88;
+}
+
+// Get current instantaneous loudness amplitude (0–1) from segment data
+function getCurrentAmplitude(){
+  // Normalize loudness_max: -50dB → 0, 0dB → 1
+  const amp = Math.max(0, Math.min(1, (currentLoudness + 50) / 50));
+  return amp;
+}
+
 // ─── UI ───
 function formatMs(ms){
   const s=Math.floor(ms/1000), m=Math.floor(s/60);
@@ -896,23 +1021,23 @@ async function updateUI(data, state){
   const statusText = document.getElementById('status-text');
 
   if(!data||!data.item){
-    npCard.style.display = 'none';
-    idleCard.style.display = 'block';
-    pill.className = 'status-pill';
-    statusText.textContent = 'NO SIGNAL';
+    npCard.style.display='none';
+    idleCard.style.display='block';
+    pill.className='status-pill';
+    statusText.textContent='NO SIGNAL';
     stopVisualizer();
     return;
   }
 
-  npCard.style.display = 'block';
-  idleCard.style.display = 'none';
+  npCard.style.display='block';
+  idleCard.style.display='none';
 
   const item = data.item;
   isPlaying = data.is_playing;
   progressMs = data.progress_ms;
   durationMs = item.duration_ms;
 
-  pill.className = 'status-pill' + (isPlaying ? ' live' : '');
+  pill.className = 'status-pill'+(isPlaying?' live':'');
   statusText.textContent = isPlaying ? 'LIVE' : 'PAUSED';
 
   const artSrc = (item.album.images&&item.album.images.length) ? item.album.images[0].url : '';
@@ -927,18 +1052,38 @@ async function updateUI(data, state){
     const artImg = document.getElementById('album-art');
     const ph = document.getElementById('art-placeholder');
     if(artSrc){
-      artImg.style.display = 'block';
-      artImg.style.opacity = '0';
-      artImg.src = artSrc;
-      artImg.onload = ()=>{ artImg.style.opacity='1'; artImg.style.transition='opacity 0.5s'; };
-      ph.style.display = 'none';
+      artImg.style.display='block'; artImg.style.opacity='0'; artImg.src=artSrc;
+      artImg.onload=()=>{ artImg.style.opacity='1'; artImg.style.transition='opacity 0.5s'; };
+      ph.style.display='none';
     } else {
-      artImg.style.display = 'none';
-      ph.style.display = 'flex';
+      artImg.style.display='none'; ph.style.display='flex';
     }
+
+    // Reset analysis for new track
+    audioFeatures=null; audioAnalysis=null;
+    beatFlash=0; currentEnergy=0.5; currentLoudness=-14;
+    segmentLoudnesses=new Float32Array(BAR_COUNT).fill(0.5);
+    vizCurrent.fill(3); vizTargets.fill(3);
+
+    // Fetch both in parallel — no await, non-blocking
+    Promise.all([fetchAudioFeatures(item.id), fetchAudioAnalysis(item.id)])
+      .then(([feat, analysis])=>{
+        audioFeatures = feat;
+        audioAnalysis = analysis;
+        if(feat){
+          currentEnergy = feat.energy||0.5;
+          beatInterval = feat.tempo ? 60000/feat.tempo : 500;
+        }
+        segmentLoudnesses = buildSegmentProfile(analysis, feat);
+        syncToProgress();
+      }).catch(()=>{});
+
+  } else {
+    // Re-sync on every poll to handle seeks/pauses
+    syncToProgress();
   }
 
-  // Progress
+  // Progress bar
   const pct = durationMs>0 ? (progressMs/durationMs)*100 : 0;
   document.getElementById('progress-fill').style.width = pct+'%';
   document.getElementById('time-current').textContent = formatMs(progressMs);
@@ -947,71 +1092,90 @@ async function updateUI(data, state){
   // Play badge
   const badge = document.getElementById('play-badge');
   const badgeText = document.getElementById('play-badge-text');
-  badge.className = 'play-badge ' + (isPlaying ? 'playing' : 'paused');
+  badge.className = 'play-badge '+(isPlaying?'playing':'paused');
   badgeText.textContent = isPlaying ? '▶ PLAYING' : '⏸ PAUSED';
 
-  // Play icon
+  // Play icon shape
   const playIcon = document.getElementById('play-icon');
   playIcon.style.opacity = isPlaying ? '0.6' : '0.3';
   playIcon.querySelector('path').setAttribute('d', isPlaying ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z');
 
-  // Shuffle / repeat
+  // Shuffle/repeat
   if(state){
-    document.getElementById('icon-shuffle').className = 'ctrl-icon' + (state.shuffle_state ? ' on' : '');
-    document.getElementById('icon-repeat').className = 'ctrl-icon' + (state.repeat_state!=='off' ? ' on' : '');
+    document.getElementById('icon-shuffle').className='ctrl-icon'+(state.shuffle_state?' on':'');
+    document.getElementById('icon-repeat').className='ctrl-icon'+(state.repeat_state!=='off'?' on':'');
   }
 
   if(isPlaying) startVisualizer(); else stopVisualizer();
 }
 
 // ─── VISUALIZER ───
-const BAR_COUNT = 36;
-let vizPhase = 0;
-let vizTargets = new Float32Array(BAR_COUNT).fill(3);
-let vizCurrent = new Float32Array(BAR_COUNT).fill(3);
-
 function buildBars(){
   ['viz-overlay','viz-standalone'].forEach((id,idx)=>{
     const c = document.getElementById(id);
-    c.innerHTML = '';
-    const arr = [];
+    c.innerHTML='';
+    const arr=[];
     for(let i=0;i<BAR_COUNT;i++){
-      const bar = document.createElement('div');
-      bar.className = 'bar';
-      bar.style.height = '2px';
-      c.appendChild(bar);
-      arr.push(bar);
+      const bar=document.createElement('div');
+      bar.className='bar'; bar.style.height='2px';
+      c.appendChild(bar); arr.push(bar);
     }
     if(idx===0) barEls.overlay=arr; else barEls.standalone=arr;
   });
 }
 
 function animateBars(){
-  vizPhase += 0.035;
+  const now = performance.now();
+  vizPhase += 0.03;
 
-  // Random target updates — more frequent for livelier animation
-  const updates = Math.random() < 0.5 ? 2 : 1;
-  for(let u=0;u<updates;u++){
-    const i = Math.floor(Math.random()*BAR_COUNT);
+  // Advance beat clock & get beat flash
+  tickBeat(now);
+
+  // Current amplitude from loudness data (0–1)
+  const amp = getCurrentAmplitude();
+
+  // Scale factor: energy + beat flash punch + current loudness amplitude
+  // beatFlash gives a sharp spike on each beat
+  const beatBoost = 1 + beatFlash * 1.2;
+  const energyScale = 0.3 + currentEnergy * 0.7;
+  const masterScale = energyScale * amp * beatBoost;
+
+  // Update each bar target based on its position in the loudness profile
+  for(let i=0; i<BAR_COUNT; i++){
+    // Profile value for this bar (0–1) = how loud this region of the song tends to be
+    const prof = segmentLoudnesses[i] || 0.5;
+
+    // Shape: center bars slightly taller (classic equalizer look), modulated by profile
     const center = BAR_COUNT/2;
-    const dist = Math.abs(i-center)/center;
-    const maxH = 72*(1-dist*0.4);
-    vizTargets[i] = Math.random()*maxH + 2;
-  }
+    const distFromCenter = Math.abs(i - center) / center;
+    const shapeMult = 1 - distFromCenter * 0.3;
 
-  for(let i=0;i<BAR_COUNT;i++){
-    const wave = Math.sin(vizPhase+i*0.35)*10 + Math.sin(vizPhase*1.7+i*0.2)*4;
-    const target = vizTargets[i]+wave;
-    vizCurrent[i] += (target-vizCurrent[i])*0.12;
+    // Slow wave for organic motion, fast wave for beat texture
+    const slowWave = Math.sin(vizPhase + i * 0.25) * 0.15;
+    const fastWave = Math.sin(vizPhase * 3.1 + i * 0.6) * 0.08;
+    const wave = slowWave + fastWave;
+
+    // Max bar height: 75px at full energy, scaled down for quiet tracks
+    const maxH = 75 * shapeMult;
+
+    // Target = profile * master scale * max height, plus wave texture
+    const target = Math.max(2, maxH * masterScale * prof * (1 + wave));
+
+    // Bars rise fast on beat, fall slower for natural decay
+    const riseSpeed = beatFlash > 0.5 ? 0.45 : 0.18;
+    const fallSpeed = 0.08;
+    const speed = target > vizCurrent[i] ? riseSpeed : fallSpeed;
+    vizCurrent[i] += (target - vizCurrent[i]) * speed;
+
     const h = Math.max(2, vizCurrent[i]);
 
-    // Color: gradient from accent to accent2 based on height
-    const t = Math.min(h/70,1);
-    const r = Math.round(0 + t*0);
-    const g = Math.round(255-t*43);  // 255→212
-    const b = Math.round(135+t*120); // 135→255
-    const col = `rgb(${r},${g},${b})`;
-    const glow = `0 0 ${Math.round(h*0.3)}px rgba(0,${Math.round(255-t*43)},${Math.round(135+t*120)},0.6)`;
+    // Color: green at base, shifts cyan at peak, with extra glow on beat
+    const t = Math.min(h/75, 1);
+    const g = Math.round(255 - t*43);
+    const b = Math.round(135 + t*120);
+    const col = `rgb(0,${g},${b})`;
+    const glowAmt = Math.round(h*0.25 + beatFlash*8);
+    const glow = `0 0 ${glowAmt}px rgba(0,${g},${b},${0.4+beatFlash*0.4})`;
 
     [barEls.overlay[i], barEls.standalone[i]].forEach(bar=>{
       bar.style.height = h+'px';
@@ -1044,7 +1208,7 @@ async function poll(){
 
 function startPolling(){
   poll();
-  pollInterval = setInterval(poll, 2500); // slightly faster
+  pollInterval = setInterval(poll, 2500);
 }
 
 function startProgressTick(){
@@ -1054,10 +1218,20 @@ function startProgressTick(){
     const pct = (progressMs/durationMs)*100;
     document.getElementById('progress-fill').style.width = pct+'%';
     document.getElementById('time-current').textContent = formatMs(progressMs);
+    // Update current segment loudness as song progresses
+    if(audioAnalysis && audioAnalysis.segments && audioAnalysis.segments.length>0){
+      const posS = progressMs/1000;
+      const segs = audioAnalysis.segments;
+      // Quick scan forward from last known position
+      let i = Math.max(0, Math.floor(posS/2)); // rough starting estimate
+      while(i < segs.length-1 && segs[i+1].start <= posS) i++;
+      while(i > 0 && segs[i].start > posS) i--;
+      currentLoudness = segs[i].loudness_max || -14;
+    }
   }, 250);
 }
 
-// ─── INIT / CONTROL ───
+// ─── INIT ───
 function showPlayer(){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('player-screen').style.display='block';
@@ -1090,8 +1264,8 @@ function showToast(msg, dur=4000){
 async function init(){
   const stored_cid = localStorage.getItem('spviz_client_id');
   const stored_ru = localStorage.getItem('spviz_redirect_uri');
-  if(stored_cid) document.getElementById('client-id-input').value = stored_cid;
-  if(stored_ru) document.getElementById('redirect-input').value = stored_ru;
+  if(stored_cid) document.getElementById('client-id-input').value=stored_cid;
+  if(stored_ru) document.getElementById('redirect-input').value=stored_ru;
 
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
