@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Popup Spammer</title>
+<style>
+    body {
+        font-family: sans-serif;
+        text-align: center;
+        background: #111;
+        color: #0f0;
+        margin-top: 100px;
+    }
+    button {
+        padding: 14px 40px;
+        font-size: 1.2em;
+        margin: 10px;
+        cursor: pointer;
+        border: none;
+        border-radius: 8px;
+    }
+    #startBtn { background: #1a8a1a; color: white; }
+    #startBtn:disabled { opacity: 0.4; cursor: default; }
+    #stopBtn { background: #a31a1a; color: white; }
+    #stopBtn:disabled { opacity: 0.4; cursor: default; }
+    #status { margin-top: 20px; font-size: 1em; color: #aaa; }
+</style>
+</head>
+<body>
+
+<h1>Popup Spammer</h1>
+<button id="startBtn" onclick="startPopups()">Start</button>
+<button id="stopBtn" onclick="stopPopups()" disabled>Stop</button>
+<p id="status">Idle</p>
+
+<script>
+    let interval = null;
+    let count = 0;
+
+    function startPopups() {
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+        document.getElementById('status').textContent = 'Running...';
+        count = 0;
+        interval = setInterval(() => {
+            const w = window.open('', '_blank', 'width=300,height=150');
+            if (w) {
+                w.document.write('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:monospace;font-size:2em;background:#111;color:#0f0;">0x44db</body></html>');
+                w.document.close();
+                count++;
+                document.getElementById('status').textContent = 'Popups opened: ' + count;
+            } else {
+                document.getElementById('status').textContent = 'Blocked by browser! Allow popups and try again.';
+                stopPopups();
+            }
+        }, 500);
+    }
+
+    function stopPopups() {
+        clearInterval(interval);
+        interval = null;
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = false;
+        document.getElementById('status').textContent = 'Stopped. Total opened: ' + count;
+    }
+</script>
+
+</body>
+</html>
