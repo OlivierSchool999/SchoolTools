@@ -38,23 +38,30 @@
     let interval = null;
     let count = 0;
 
+    function spawnPopup() {
+        const pw = 300;
+        const ph = 150;
+        const x = Math.floor(Math.random() * (screen.width - pw));
+        const y = Math.floor(Math.random() * (screen.height - ph));
+
+        const popup = window.open('', '_blank', `width=${pw},height=${ph},left=${x},top=${y}`);
+        if (popup) {
+            popup.document.write('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:monospace;font-size:2em;background:#111;color:#0f0;">0x44db</body></html>');
+            popup.document.close();
+            count++;
+            document.getElementById('status').textContent = 'Popups opened: ' + count;
+        } else {
+            document.getElementById('status').textContent = 'Blocked by browser! Allow popups and try again.';
+            stopPopups();
+        }
+    }
+
     function startPopups() {
         document.getElementById('startBtn').disabled = true;
         document.getElementById('stopBtn').disabled = false;
         document.getElementById('status').textContent = 'Running...';
         count = 0;
-        interval = setInterval(() => {
-            const w = window.open('', '_blank', 'width=300,height=150');
-            if (w) {
-                w.document.write('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:monospace;font-size:2em;background:#111;color:#0f0;">0x44db</body></html>');
-                w.document.close();
-                count++;
-                document.getElementById('status').textContent = 'Popups opened: ' + count;
-            } else {
-                document.getElementById('status').textContent = 'Blocked by browser! Allow popups and try again.';
-                stopPopups();
-            }
-        }, 500);
+        interval = setInterval(spawnPopup, 100);
     }
 
     function stopPopups() {
