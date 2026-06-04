@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spotify Track Info</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #181818;
+    --border: rgba(255,255,255,0.07);
+    --accent: #1DB954;
+    --accent2: #1ed760;
+    --text: #f0f0f0;
+    --muted: #888;
+    --faint: #444;
+    --font-display: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 20px 80px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Dot grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+  .header-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+  }
+  .header-icon svg { width: 22px; height: 22px; fill: #000; }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+
+  /* Input row */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 48px;
+  }
+  .input-row input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-row input::placeholder { color: var(--faint); }
+  .input-row input:focus { border-color: var(--accent); }
+  .input-row button {
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    color: #000;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .input-row button:hover { background: var(--accent2); }
+  .input-row button:active { transform: scale(0.97); }
+
+  /* Error */
+  .error {
+    background: rgba(255,60,60,0.08);
+    border: 1px solid rgba(255,60,60,0.2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #ff6b6b;
+    font-family: var(--font-mono);
+    margin-bottom: 24px;
+    display: none;
+  }
+  .error.show { display: block; }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 48px 0;
+    display: none;
+  }
+  .loading.show { display: block; }
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+  /* Result panel */
+  .result { display: none; }
+  .result.show { display: block; }
+
+  /* Canvas connector line */
+  .connector-canvas {
+    width: 100%;
+    display: block;
+    margin: 0;
+  }
+
+  /* Track hero */
+  .track-hero {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 4px;
+  }
+  .track-art {
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--surface2);
+  }
+  .track-art-placeholder {
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .track-art-placeholder svg { width: 32px; height: 32px; fill: var(--faint); }
+  .track-meta { flex: 1; min-width: 0; }
+  .track-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .track-name {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .track-artist {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .open-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: #000;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: background 0.15s;
+  }
+  .open-btn:hover { background: var(--accent2); }
+  .open-btn svg { width: 11px; height: 11px; fill: #000; }
+
+  /* Info grid */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: border-color 0.2s;
+  }
+  .info-card:hover { border-color: rgba(255,255,255,0.14); }
+  .info-card.wide { grid-column: 1 / -1; }
+  .info-card-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .info-card-label .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .info-card-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .info-card-value.mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  /* Embed row */
+  .embed-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .embed-wrap iframe {
+    width: 100%;
+    display: block;
+    border: none;
+  }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    background: rgba(29,185,84,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(29,185,84,0.2);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    margin: 2px;
+  }
+
+  /* Animated dots on canvas */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .result.show .track-hero,
+  .result.show .info-card,
+  .result.show .embed-wrap {
+    animation: fadeIn 0.35s ease both;
+  }
+  .result.show .info-card:nth-child(1) { animation-delay: 0.05s; }
+  .result.show .info-card:nth-child(2) { animation-delay: 0.1s; }
+  .result.show .info-card:nth-child(3) { animation-delay: 0.15s; }
+  .result.show .info-card:nth-child(4) { animation-delay: 0.2s; }
+  .result.show .info-card:nth-child(5) { animation-delay: 0.25s; }
+
+  .section-connector {
+    position: relative;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
+  .section-connector svg {
+    width: 100%;
+    height: 28px;
+    overflow: visible;
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+      </svg>
+    </div>
+    <h1>Track Inspector</h1>
+    <p>paste a spotify url → get the full picture</p>
+  </div>
+
+  <div class="input-row">
+    <input type="text" id="urlInput" placeholder="https://open.spotify.com/track/..." />
+    <button onclick="fetchTrack()">Inspect</button>
+  </div>
+
+  <div class="error" id="errorBox"></div>
+  <div class="loading" id="loadingBox">
+    <div class="spinner"></div>
+    <p>fetching track data...</p>
+  </div>
+
+  <div class="result" id="resultBox">
+
+    <!-- Hero -->
+    <div class="track-hero" id="heroCard">
+      <div id="artWrap"></div>
+      <div class="track-meta">
+        <div class="track-label">Now Inspecting</div>
+        <div class="track-name" id="trackName">—</div>
+        <div class="track-artist" id="trackArtist">—</div>
+        <a id="spotifyLink" href="#" target="_blank" class="open-btn">
+          <svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+          Open in Spotify
+        </a>
+      </div>
+    </div>
+
+    <!-- connector -->
+    <div class="section-connector"><svg id="conn1"></svg></div>
+
+    <!-- Info grid -->
+    <div class="info-grid" id="infoGrid"></div>
+
+    <!-- connector -->
+    <div class="section-connector"><svg id="conn2"></svg></div>
+
+    <!-- Embed -->
+    <div class="embed-wrap" id="embedWrap"></div>
+
+  </div>
+</div>
+
+<script>
+const CORS = 'https://corsproxy.io/?';
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function hideAll() {
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('loadingBox').classList.remove('show');
+  document.getElementById('resultBox').classList.remove('show');
+}
+
+function extractTrackId(url) {
+  const m = url.match(/spotify\.com\/track\/([A-Za-z0-9]+)/);
+  return m ? m[1] : null;
+}
+
+function drawConnector(svgId, fromX, toX, color) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const w = svg.parentElement.offsetWidth || 620;
+  svg.setAttribute('viewBox', `0 0 ${w} 28`);
+  const x1 = fromX * w, x2 = toX * w;
+  const mid = (x1 + x2) / 2;
+  svg.innerHTML = `
+    <line x1="${x1}" y1="0" x2="${mid}" y2="14" stroke="${color}" stroke-width="1" stroke-dasharray="3,4" opacity="0.35"/>
+    <line x1="${mid}" y1="14" x2="${x2}" y2="28" stroke="${color}" stroke-width="1" stroke-dasharray="3,4" opacity="0.35"/>
+    <circle cx="${x1}" cy="0" r="3" fill="${color}" opacity="0.5"/>
+    <circle cx="${mid}" cy="14" r="2.5" fill="${color}" opacity="0.7"/>
+    <circle cx="${x2}" cy="28" r="3" fill="${color}" opacity="0.5"/>
+  `;
+}
+
+function infoCard(label, value, wide = false, mono = false) {
+  const d = document.createElement('div');
+  d.className = 'info-card' + (wide ? ' wide' : '');
+  d.innerHTML = `
+    <div class="info-card-label"><span class="dot"></span>${label}</div>
+    <div class="info-card-value${mono ? ' mono' : ''}">${value || '—'}</div>
+  `;
+  return d;
+}
+
+async function fetchTrack() {
+  hideAll();
+  const raw = document.getElementById('urlInput').value.trim();
+  if (!raw) { showError('Paste a Spotify track URL first.'); return; }
+
+  const trackId = extractTrackId(raw);
+  if (!trackId) { showError('That doesn\'t look like a Spotify track URL. Try: open.spotify.com/track/...'); return; }
+
+  document.getElementById('loadingBox').classList.add('show');
+
+  try {
+    // oEmbed — no API key needed
+    const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(raw)}`;
+    const res = await fetch(CORS + encodeURIComponent(oembedUrl));
+    if (!res.ok) throw new Error('Could not reach Spotify.');
+    const data = await res.json();
+
+    hideAll();
+
+    // Parse what we have
+    const title = data.title || '';
+    // oEmbed title is usually "Song Name" or "Song Name - Artist"
+    let songName = title, artistName = data.author_name || '';
+    if (title.includes(' - ')) {
+      const parts = title.split(' - ');
+      songName = parts[0].trim();
+      if (!artistName) artistName = parts.slice(1).join(' - ').trim();
+    }
+
+    // Populate hero
+    document.getElementById('trackName').textContent = songName;
+    document.getElementById('trackArtist').textContent = artistName || 'Unknown artist';
+    document.getElementById('spotifyLink').href = raw;
+
+    const artWrap = document.getElementById('artWrap');
+    if (data.thumbnail_url) {
+      artWrap.innerHTML = `<img class="track-art" src="${data.thumbnail_url}" alt="Album art" onerror="this.style.display='none'"/>`;
+    } else {
+      artWrap.innerHTML = `<div class="track-art-placeholder"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>`;
+    }
+
+    // Info grid
+    const grid = document.getElementById('infoGrid');
+    grid.innerHTML = '';
+
+    // Track ID
+    grid.appendChild(infoCard('Track ID', trackId, false, true));
+    // Type
+    grid.appendChild(infoCard('Content Type', data.type || 'track'));
+    // Provider
+    grid.appendChild(infoCard('Provider', data.provider_name || 'Spotify'));
+    // Thumbnail size
+    if (data.thumbnail_width && data.thumbnail_height) {
+      grid.appendChild(infoCard('Artwork Size', `${data.thumbnail_width} × ${data.thumbnail_height}px`));
+    }
+    // Direct Spotify URL (cleaned)
+    const cleanUrl = `open.spotify.com/track/${trackId}`;
+    grid.appendChild(infoCard('Spotify URI', `spotify:track:${trackId}`, false, true));
+    grid.appendChild(infoCard('Track URL', `<a href="${raw}" target="_blank" style="color:var(--accent);text-decoration:none;font-size:12px;font-family:var(--font-mono)">${cleanUrl}</a>`, false, false));
+
+    // HTML embed
+    if (data.html) {
+      const embedDiv = document.getElementById('embedWrap');
+      embedDiv.innerHTML = '';
+      // Build a clean iframe embed
+      const embedUrl = `https://open.spotify.com/embed/track/${trackId}`;
+      const iframe = document.createElement('iframe');
+      iframe.src = embedUrl;
+      iframe.height = '152';
+      iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+      iframe.loading = 'lazy';
+      embedDiv.appendChild(iframe);
+    }
+
+    // Draw connectors
+    document.getElementById('resultBox').classList.add('show');
+    requestAnimationFrame(() => {
+      drawConnector('conn1', 0.15, 0.85, '#1DB954');
+      drawConnector('conn2', 0.82, 0.18, '#1DB954');
+    });
+
+  } catch (e) {
+    hideAll();
+    showError('Failed to load track. Make sure the URL is a public Spotify track link.');
+  }
+}
+
+// Allow Enter key
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fetchTrack();
+});
+
+// Redraw connectors on resize
+window.addEventListener('resize', () => {
+  if (document.getElementById('resultBox').classList.contains('show')) {
+    drawConnector('conn1', 0.15, 0.85, '#1DB954');
+    drawConnector('conn2', 0.82, 0.18, '#1DB954');
+  }
+});
+</script>
+</body>
+</html>
