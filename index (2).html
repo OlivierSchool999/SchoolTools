@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simple Spotify Player</title>
+<style>
+body{margin:0;font-family:Arial;background:#121212;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh}
+.card{width:360px;background:#1e1e1e;padding:20px;border-radius:18px;box-shadow:0 10px 30px #0008}
+input{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:none;background:#2a2a2a;color:#fff}
+button{padding:10px 16px;border:none;border-radius:20px;background:#1db954;color:#000;font-weight:bold;cursor:pointer}
+#player{display:none;text-align:center}
+img{width:220px;height:220px;border-radius:16px;object-fit:cover}
+.controls button{margin:10px}
+.bar{height:6px;background:#333;border-radius:8px}.fill{height:100%;width:0;background:#1db954}
+</style></head><body>
+<div class="card">
+<div id="login">
+<h2>Spotify Login</h2>
+<input id="client" placeholder="Client ID">
+<input id="access" placeholder="Access Token">
+<input id="refresh" placeholder="Refresh Token">
+<button onclick="connect()">Connect</button>
+</div>
+<div id="player">
+<img id="cover"><h2 id="title">Nothing Playing</h2><p id="artist"></p>
+<div class="bar"><div class="fill" id="fill"></div></div>
+<div class="controls">
+<button onclick="cmd('previous','POST')">⏮</button>
+<button onclick="toggle()" id="pp">▶</button>
+<button onclick="cmd('next','POST')">⏭</button>
+</div></div></div>
+<script>
+let client="",access="",refresh="";
+function connect(){
+client=clientEl.value;access=accessEl.value;refresh=refreshEl.value;
+localStorage.client=client;localStorage.access=access;localStorage.refresh=refresh;
+login.style.display='none';player.style.display='block';update();setInterval(update,1000);
+}
+const clientEl=document.getElementById('client'),accessEl=document.getElementById('access'),refreshEl=document.getElementById('refresh');
+clientEl.value=localStorage.client||'';accessEl.value=localStorage.access||'';refreshEl.value=localStorage.refresh||'';
+async function refreshToken(){
+const b=new URLSearchParams({grant_type:'refresh_token',refresh_token:refresh,client_id:client});
+const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b});
+const j=await r.json();if(j.access_token){access=j.access_token;localStorage.access=access;}
+}
+async function api(url,m='GET'){
+let r=await fetch('https://api.spotify.com/v1/me/player/'+url,{method:m,headers:{Authorization:'Bearer '+access}});
+if(r.status==401){await refreshToken();r=await fetch('https://api.spotify.com/v1/me/player/'+url,{method:m,headers:{Authorization:'Bearer '+access}});}
+return r;
+}
+async function update(){
+const r=await api('');
+if(!r.ok)return;
+const d=await r.json();if(!d.item)return;
+cover.src=d.item.album.images[0].url;
+title.textContent=d.item.name;
+artist.textContent=d.item.artists.map(a=>a.name).join(', ');
+fill.style.width=(d.progress_ms/d.item.duration_ms*100)+'%';
+pp.textContent=d.is_playing?'⏸':'▶';
+}
+async function cmd(c,m){await api(c,m);setTimeout(update,300);}
+async function toggle(){const r=await api('');const d=await r.json();await api(d.is_playing?'pause':'play',d.is_playing?'PUT':'PUT');setTimeout(update,300);}
+if(localStorage.access&&localStorage.client&&localStorage.refresh){connect();}
+</script></body></html>
