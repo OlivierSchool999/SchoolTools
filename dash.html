@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dash JS Studio</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .title { font-weight: 800; font-size: 16px; color: #58a6ff; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    button, select {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { background: #30363d; }
+    button:active { transform: translateY(1px); }
+    .btn-connect { background: #1f6feb; color: #fff; border: none; }
+    .btn-connect.ok { background: #238636; }
+    .btn-run { background: #238636; color: #fff; border: none; padding: 7px 16px; }
+    .btn-stop { background: #da3633; color: #fff; border: none; }
+
+    main { display: flex; flex: 1; overflow: hidden; }
+    .editor-pane {
+      flex: 1.5;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #30363d;
+      min-width: 0;
+    }
+    .editor-bar {
+      background: #161b22;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #8b949e;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    textarea#editor {
+      flex: 1;
+      width: 100%;
+      background: #0d1117;
+      color: #e6edf3;
+      border: none;
+      padding: 16px;
+      font-family: "Fira Code", "Consolas", "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      tab-size: 2;
+      white-space: pre;
+      overflow: auto;
+    }
+    .side-pane {
+      flex: 1;
+      max-width: 440px;
+      min-width: 280px;
+      background: #161b22;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .docs {
+      padding: 12px;
+      border-bottom: 1px solid #30363d;
+      overflow-y: auto;
+      max-height: 50%;
+    }
+    .docs h3 { margin-bottom: 8px; font-size: 13px; color: #58a6ff; }
+    .cmd-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font-family: monospace;
+      font-size: 12px;
+      margin-bottom: 4px;
+      padding: 6px 8px;
+      background: #0d1117;
+      color: #79c0ff;
+      border: 1px solid #21262d;
+    }
+    .cmd-btn:hover { background: #161b22; border-color: #30363d; }
+
+    #console {
+      flex: 1;
+      padding: 10px 12px;
+      font-family: monospace;
+      font-size: 12px;
+      overflow-y: auto;
+      background: #090c10;
+      min-height: 100px;
+    }
+    .log-line { margin-bottom: 3px; word-break: break-word; }
+    .log-tx { color: #58a6ff; }
+    .log-ok { color: #3fb950; }
+    .log-err { color: #f85149; }
+    .log-sensor { color: #d2a8ff; }
+    .log-info { color: #8b949e; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="title">⚡ DASH JS STUDIO</div>
+  <div class="controls">
+    <select id="presets" onchange="loadPreset(this.value)">
+      <option value="">Voorbeelden...</option>
+      <option value="square">Vierkant rijden</option>
+      <option value="police">Politie sirene</option>
+      <option value="scan">Rondkijken &amp; groeten</option>
+      <option value="rainbow">Regenboog oren</option>
+      <option value="dance">Robot dans</option>
+    </select>
+    <button onclick="saveCode()">💾 Opslaan</button>
+    <button onclick="document.getElementById('fileIn').click()">📂 Openen</button>
+    <input type="file" id="fileIn" accept=".js,.txt" style="display:none" onchange="openCode(event)">
+    <button id="connectBtn" class="btn-connect" onclick="connectDash()">🔗 Verbind Dash</button>
+    <button class="btn-run" onclick="runCode()">▶ Run (Ctrl+Enter)</button>
+    <button class="btn-stop" onclick="stopAll()">🛑 STOP</button>
+  </div>
+</header>
+
+<main>
+  <div class="editor-pane">
+    <div class="editor-bar">
+      <span>JavaScript editor — schrijf async code met <code>await dash.*</code></span>
+      <span id="connStatus">Niet verbonden</span>
+    </div>
+    <textarea id="editor" spellcheck="false" autocomplete="off">await dash.sound('SY_HI');
+await dash.ears('#00ffcc');
+await dash.eyes(255);
+
+for (let i = 0; i < 4; i++) {
+  await dash.drive(100, 1.0);
+  await dash.ears('#ff0055');
+  await dash.turn('RIGHT', 0.65);
+  await dash.ears('#00ffcc');
+}
+
+await dash.ears('#00ff00');
+await dash.sound('SY_LAUGH');
+</textarea>
+  </div>
+
+  <div class="side-pane">
+    <div class="docs">
+      <h3>Klik om commando in te voegen:</h3>
+      <button class="cmd-btn" onclick="insertCmd('await dash.drive(100, 1.0);\n')">dash.drive(snelheid, sec)</button>
+      <button class="cmd-btn" onclick="insertCmd(&quot;await dash.turn('LEFT', 0.65);\n&quot;)">dash.turn('LEFT'|'RIGHT', sec)</button>
+      <button class="cmd-btn" onclick="insertCmd('await dash.wheels(100, -100, 0.5);\n')">dash.wheels(links, rechts, sec)</button>
+      <button class="cmd-btn" onclick="insertCmd('await dash.stop();\n')">dash.stop()</button>
+      <button class="cmd-btn" onclick="insertCmd('await dash.headYaw(0);\n')">dash.headYaw(-90 tot 90)</button>
+      <button class="cmd-btn" onclick="insertCmd('await dash.headPitch(0);\n')">dash.headPitch(-20 tot 20)</button>
+      <button class="cmd-btn" onclick="insertCmd(&quot;await dash.ears('#ff0055');\n&quot;)">dash.ears('#hexkleur')</button>
+      <button class="cmd-btn" onclick="insertCmd(&quot;await dash.chest('#0088ff');\n&quot;)">dash.chest('#hexkleur')</button>
+      <button class="cmd-btn" onclick="insertCmd('await dash.eyes(255);\n')">dash.eyes(0 tot 255)</button>
+      <button class="cmd-btn" onclick="insertCmd(&quot;await dash.sound('SY_HI');\n&quot;)">dash.sound('SY_HI'|'SY_HORN'|'SY_SIREN')</button>
+      <button class="cmd-btn" onclick="insertCmd('await dash.wait(1.0);\n')">dash.wait(sec)</button>
+      <button class="cmd-btn" onclick="insertCmd('const d = await dash.getDistance();\nconsole.log(d);\n')">dash.getDistance() — afstandssensor</button>
+      <button class="cmd-btn" onclick="insertCmd('await dash.raw([0x0b, 0xff, 0x00, 0x00]);\n')">dash.raw([bytes])</button>
+    </div>
+    <div id="console">
+      <div class="log-line log-ok">Gereed. Verbind met Dash of test direct in simulatiemodus.</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ===== Constants =====
+  const SERVICE_UUID      = 'af237777-879d-6186-1f49-deca0e85d9c1';
+  const CMD_CHAR_UUID     = 'af230002-879d-6186-1f49-deca0e85d9c1';
+  const SENSOR_CHAR_UUID  = 'af230006-879d-6186-1f49-deca0e85d9c1';
+
+  // ===== State =====
+  let cmdChar = null;
+  let sensorChar = null;
+  let aborted = false;
+  let connectedDevice = null;
+  let lastSensorData = null;
+
+  // ===== DOM =====
+  const editor = document.getElementById('editor');
+  const consoleEl = document.getElementById('console');
+  const connectBtn = document.getElementById('connectBtn');
+  const connStatus = document.getElementById('connStatus');
+
+  // ===== Logging =====
+  function log(msg, cls = 'log-info') {
+    const line = document.createElement('div');
+    line.className = 'log-line ' + cls;
+    const time = new Date().toLocaleTimeString();
+    line.textContent = '[' + time + '] ' + msg;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  function clearLog() { consoleEl.innerHTML = ''; }
+
+  // ===== Web Bluetooth =====
+  async function connectDash() {
+    try {
+      log('Zoeken naar Dash via Web Bluetooth...', 'log-info');
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [SERVICE_UUID]
+      });
+      connectedDevice = device;
+      device.addEventListener('gattserverdisconnected', onDisconnected);
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(SERVICE_UUID);
+      cmdChar = await service.getCharacteristic(CMD_CHAR_UUID);
+      try {
+        sensorChar = await service.getCharacteristic(SENSOR_CHAR_UUID);
+        await sensorChar.startNotifications();
+        sensorChar.addEventListener('characteristicvaluechanged', onSensor);
+        log('Sensor-kanaal geactiveerd.', 'log-info');
+      } catch (e) {
+        log('Sensor-kanaal niet beschikbaar (OK voor simpele besturing).', 'log-info');
+      }
+      connectBtn.textContent = '✅ ' + (device.name || 'Dash');
+      connectBtn.classList.add('ok');
+      connStatus.textContent = 'Verbonden: ' + (device.name || 'Dash');
+      connStatus.style.color = '#3fb950';
+      log('Verbonden met ' + (device.name || 'Dash'), 'log-ok');
+    } catch (e) {
+      log('Verbinden mislukt: ' + e.message, 'log-err');
+    }
+  }
+
+  function onDisconnected() {
+    log('Verbinding verbroken.', 'log-err');
+    connectBtn.textContent = '🔗 Verbind Dash';
+    connectBtn.classList.remove('ok');
+    connStatus.textContent = 'Niet verbonden';
+    connStatus.style.color = '';
+    cmdChar = null;
+    sensorChar = null;
+  }
+
+  function onSensor(e) {
+    const val = e.target.value;
+    const bytes = [];
+    for (let i = 0; i < val.byteLength; i++) bytes.push(val.getUint8(i));
+    lastSensorData = bytes;
+    // Dash sensor packets: byte 0 = type. 0x49 = back distance, 0x48 = front distance (rough heuristic from MorseAPI)
+    const hex = bytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+    log('SENSOR <- ' + hex, 'log-sensor');
+  }
+
+  async function sendBytes(bytes) {
+    if (aborted) throw new Error('ABORT');
+    const hex = bytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+    log('TX -> ' + hex, 'log-tx');
+    if (cmdChar) {
+      await cmdChar.writeValue(new Uint8Array(bytes));
+    }
+  }
+
+  // ===== Helpers =====
+  function hexToRgb(hex) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function signedByte(v) {
+    const c = clamp(v, -127, 127);
+    return c < 0 ? 256 + c : c;
+  }
+
+  // ===== Dash API =====
+  const dash = {
+    async raw(bytes) { await sendBytes(bytes); },
+
+    async wait(sec) {
+      const steps = Math.max(1, Math.round(sec * 20));
+      for (let i = 0; i < steps; i++) {
+        if (aborted) throw new Error('ABORT');
+        await new Promise(r => setTimeout(r, 50));
+      }
+    },
+
+    async driveRaw(left, right) {
+      await sendBytes([0x02, signedByte(left), 0x00, signedByte(right), 0x00]);
+    },
+
+    async drive(speed, sec) {
+      await this.driveRaw(speed, speed);
+      await this.wait(sec);
+      await this.stop();
+    },
+
+    async turn(dir, sec) {
+      const d = String(dir).toUpperCase();
+      const s = d === 'LEFT' ? -75 : 75;
+      await this.driveRaw(s, -s);
+      await this.wait(sec);
+      await this.stop();
+    },
+
+    async wheels(left, right, sec) {
+      await this.driveRaw(left, right);
+      await this.wait(sec);
+      await this.stop();
+    },
+
+    async stop() {
+      await sendBytes([0x02, 0x00, 0x00, 0x00, 0x00]);
+    },
+
+    async ears(hex) {
+      const [r, g, b] = hexToRgb(hex);
+      await sendBytes([0x0b, r, g, b]);
+    },
+
+    async chest(hex) {
+      const [r, g, b] = hexToRgb(hex);
+      await sendBytes([0x03, r, g, b]);
+    },
+
+    async eyes(mask) {
+      await sendBytes([0x08, Number(mask) & 0xff]);
+    },
+
+    async headYaw(deg) {
+      const c = clamp(deg, -90, 90);
+      await sendBytes([0x06, signedByte(c)]);
+    },
+
+    async headPitch(deg) {
+      const c = clamp(deg, -20, 20);
+      await sendBytes([0x07, signedByte(c)]);
+    },
+
+    async sound(name) {
+      const chars = Array.from(String(name)).map(c => c.charCodeAt(0));
+      await sendBytes([0x18, ...chars, 0x00]);
+    },
+
+    async getDistance() {
+      // Returns last known sensor data array, or null if no sensor notifications.
+      return lastSensorData;
+    }
+  };
+
+  // ===== Run / Stop =====
+  async function runCode() {
+    aborted = false;
+    clearLog();
+    if (!cmdChar) log('⚠️ Niet verbonden — simulatiemodus (geen bytes naar Dash).', 'log-info');
+    log('▶ Uitvoeren...', 'log-ok');
+    try {
+      const code = editor.value;
+      const fn = new Function('dash', 'log', 'return (async () => {\n' + code + '\n})();');
+      await fn(dash, log);
+      log('✅ Klaar!', 'log-ok');
+    } catch (e) {
+      if (e.message === 'ABORT') log('🛑 Gestopt door gebruiker.', 'log-err');
+      else log('❌ Codefout: ' + e.message, 'log-err');
+    }
+  }
+
+  async function stopAll() {
+    aborted = true;
+    log('🛑 STOP ingedrukt.', 'log-err');
+    try {
+      if (cmdChar) await cmdChar.writeValue(new Uint8Array([0x02, 0x00, 0x00, 0x00, 0x00]));
+    } catch (e) {}
+  }
+
+  // ===== Editor helpers =====
+  function insertCmd(str) {
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.slice(0, start) + str + editor.value.slice(end);
+    editor.focus();
+    editor.selectionStart = editor.selectionEnd = start + str.length;
+  }
+
+  function saveCode() {
+    const blob = new Blob([editor.value], { type: 'text/javascript' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'dash-script.js';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    log('Script opgeslagen als dash-script.js', 'log-ok');
+  }
+
+  function openCode(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => { editor.value = e.target.result; log('Bestand geladen: ' + file.name, 'log-ok'); };
+    reader.onerror = () => log('Bestand lezen mislukt.', 'log-err');
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  function loadPreset(val) {
+    if (!val) return;
+    const presets = {
+      square:
+        "await dash.sound('SY_HI');\n" +
+        "await dash.ears('#00ffcc');\n" +
+        "await dash.eyes(255);\n\n" +
+        "for (let i = 0; i < 4; i++) {\n" +
+        "  await dash.drive(100, 1.0);\n" +
+        "  await dash.ears('#ff0055');\n" +
+        "  await dash.turn('RIGHT', 0.65);\n" +
+        "  await dash.ears('#00ffcc');\n" +
+        "}\n\n" +
+        "await dash.ears('#00ff00');\n" +
+        "await dash.sound('SY_LAUGH');\n",
+
+      police:
+        "await dash.sound('SY_SIREN');\n\n" +
+        "for (let i = 0; i < 8; i++) {\n" +
+        "  await dash.ears('#ff0000');\n" +
+        "  await dash.chest('#0000ff');\n" +
+        "  await dash.headYaw(-45);\n" +
+        "  await dash.wait(0.25);\n" +
+        "  await dash.ears('#0000ff');\n" +
+        "  await dash.chest('#ff0000');\n" +
+        "  await dash.headYaw(45);\n" +
+        "  await dash.wait(0.25);\n" +
+        "}\n\n" +
+        "await dash.headYaw(0);\n" +
+        "await dash.chest('#000000');\n",
+
+      scan:
+        "await dash.eyes(255);\n" +
+        "await dash.headYaw(-60);\n" +
+        "await dash.wait(0.5);\n" +
+        "await dash.headYaw(60);\n" +
+        "await dash.wait(0.5);\n" +
+        "await dash.headYaw(0);\n" +
+        "await dash.headPitch(-15);\n" +
+        "await dash.sound('SY_HI');\n" +
+        "await dash.wait(0.5);\n" +
+        "await dash.headPitch(0);\n",
+
+      rainbow:
+        "const colors = ['#ff0000','#ff8800','#ffff00','#00ff00','#0088ff','#8800ff'];\n" +
+        "for (let i = 0; i < 3; i++) {\n" +
+        "  for (const c of colors) {\n" +
+        "    await dash.ears(c);\n" +
+        "    await dash.chest(c);\n" +
+        "    await dash.wait(0.15);\n" +
+        "  }\n" +
+        "}\n" +
+        "await dash.ears('#000000');\n" +
+        "await dash.chest('#000000');\n",
+
+      dance:
+        "await dash.sound('SY_LAUGH');\n\n" +
+        "for (let i = 0; i < 4; i++) {\n" +
+        "  await dash.wheels(100, -100, 0.4);\n" +
+        "  await dash.ears('#ff00ff');\n" +
+        "  await dash.headYaw(45);\n" +
+        "  await dash.wheels(-100, 100, 0.4);\n" +
+        "  await dash.ears('#00ffff');\n" +
+        "  await dash.headYaw(-45);\n" +
+        "}\n" +
+        "await dash.headYaw(0);\n" +
+        "await dash.stop();\n" +
+        "await dash.ears('#00ff00');\n"
+    };
+    if (presets[val]) {
+      editor.value = presets[val];
+      log('Voorbeeld geladen: ' + val, 'log-ok');
+    }
+    document.getElementById('presets').value = '';
+  }
+
+  // ===== Keyboard shortcuts =====
+  editor.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      insertCmd('  ');
+    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      runCode();
+    }
+  });
+
+  // Auto-connect retry on page load (user gesture still required, so this just sets UI)
+  log('Klik op "Verbind Dash" om te beginnen. Ctrl+Enter voert je code uit.', 'log-info');
+</script>
+
+</body>
+</html>
